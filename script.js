@@ -57,6 +57,23 @@ function attachEventListeners() {
         btn.addEventListener('click', selectPriority);
     });
 
+    // Importance slider
+    const importanceSlider = document.getElementById('taskImportance');
+    if (importanceSlider) {
+        importanceSlider.addEventListener('input', handleImportanceChange);
+    }
+    
+    // Checklist input Enter key
+    const checklistInput = document.getElementById('checklistInput');
+    if (checklistInput) {
+        checklistInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addChecklistItem();
+            }
+        });
+    }
+
     // AI suggestions
     document.querySelectorAll('.suggestion-pill').forEach(pill => {
         pill.addEventListener('click', handleSuggestionClick);
@@ -350,8 +367,17 @@ function openTaskModal() {
 function closeTaskModal() {
     document.getElementById('taskModal').style.display = 'none';
     document.getElementById('taskForm').reset();
+    document.getElementById('checklistItems').innerHTML = '';
+    document.getElementById('importanceValue').textContent = '50';
+    document.getElementById('taskImportance').value = 50;
+    
+    // Reset importance labels
+    document.querySelectorAll('.importance-label').forEach(label => label.classList.remove('active'));
+    document.querySelectorAll('.importance-label')[2].classList.add('active');
+    
     gameState.selectedCategory = null;
     gameState.selectedPriority = 'medium';
+    gameState.selectedXP = 20;
     updateModalButtons();
 }
 
@@ -381,48 +407,148 @@ function updateModalButtons() {
     document.querySelector(`.priority-option[data-priority="${gameState.selectedPriority}"]`)?.classList.add('active');
 }
 
+// Handle importance slider
+function handleImportanceChange(e) {
+    const value = e.target.value;
+    const importanceValue = document.getElementById('importanceValue');
+    importanceValue.textContent = value;
+    
+    // Update labels
+    const labels = document.querySelectorAll('.importance-label');
+    labels.forEach(label => label.classList.remove('active'));
+    
+    let activeIndex = 2; // Default to Med
+    if (value <= 20) activeIndex = 0;
+    else if (value <= 40) activeIndex = 1;
+    else if (value <= 60) activeIndex = 2;
+    else if (value <= 80) activeIndex = 3;
+    else activeIndex = 4;
+    
+    labels[activeIndex].classList.add('active');
+    
+    // Update XP based on importance
+    const xpMap = [10, 15, 20, 30, 50];
+    gameState.selectedPriority = ['min', 'low', 'medium', 'high', 'max'][activeIndex];
+    gameState.selectedXP = xpMap[activeIndex];
+}
+
+// Checklist functionality
+function addChecklistItem() {
+    const input = document.getElementById('checklistInput');
+    const itemText = input.value.trim();
+    
+    if (!itemText) return;
+    
+    const checklistItems = document.getElementById('checklistItems');
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'checklist-item';
+    itemDiv.innerHTML = `
+        <input type="checkbox" class="pixel-checkbox">
+        <span>${itemText}</span>
+        <button type="button" onclick="removeChecklistItem(this)">X</button>
+    `;
+    
+    checklistItems.appendChild(itemDiv);
+    input.value = '';
+}
+
+function removeChecklistItem(button) {
+    button.parentElement.remove();
+}
+
+// Get checklist items from modal
+function getChecklistItems() {
+    const items = [];
+    document.querySelectorAll('#checklistItems .checklist-item').forEach(item => {
+        const text = item.querySelector('span').textContent;
+        const checked = item.querySelector('input[type="checkbox"]').checked;
+        items.push({ text, checked });
+    });
+    return items;
+}
+
 // Handle Task Form Submission
 function handleTaskSubmit(e) {
     e.preventDefault();
     
     const taskName = document.getElementById('taskName').value.trim();
-    if (!taskName || !gameState.selectedCategory) {
-        showNotification('Please fill in all fields!');
+    const project = document.getElementById('taskProject').value || gameState.selectedCategory;
+    
+    if (!taskName || !project) {
+        showNotification('Please fill in all required fields!');
         return;
     }
     
-    const priority = gameState.selectedPriority;
-    const xpValues = { low: 10, medium: 20, high: 30 };
-    const xp = xpValues[priority];
+    // Get importance from slider
+    const importance = parseInt(document.getElementById('taskImportance').value);
+    const xp = gameState.selectedXP || 20; // Default to medium if not set
     
-    createTask(taskName, gameState.selectedCategory, priority, xp);
+    // Gather all task data
+    const taskData = {
+        name: taskName,
+        category: project,
+        priority: gameState.selectedPriority,
+        xp: xp,
+        dueDate: document.getElementById('taskDueDate').value,
+        description: document.getElementById('taskDescription').value,
+        checklist: getChecklistItems(),
+        recurring: document.getElementById('taskRecurring').checked,
+        importance: importance
+    };
+    
+    createTask(taskData);
     closeTaskModal();
 }
 
 // Create Task
-function createTask(name, category, priority, xp) {
+function createTask(taskData) {
     const tasksContainer = document.querySelector('.tasks-container');
     const taskId = `task${Date.now()}`;
     
-    const categoryInfo = gameState.categories[category];
+    const categoryInfo = gameState.categories[taskData.category];
     
     const newTask = document.createElement('div');
     newTask.className = 'task-item';
-    newTask.dataset.xp = xp;
-    newTask.dataset.category = category;
-    newTask.dataset.priority = priority;
+    newTask.dataset.xp = taskData.xp;
+    newTask.dataset.category = taskData.category;
+    newTask.dataset.priority = taskData.priority;
+    newTask.dataset.taskData = JSON.stringify(taskData);
     
-    newTask.innerHTML = `
+    // Build task HTML with additional info
+    let taskHTML = `
         <input type="checkbox" class="pixel-checkbox" id="${taskId}">
         <div class="task-content">
-            <label for="${taskId}">${name}</label>
+            <label for="${taskId}">${taskData.name}</label>
             <div class="task-meta">
                 <span class="task-category">${categoryInfo.icon} ${categoryInfo.name}</span>
-                <span class="task-priority priority-${priority}">${priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
+                <span class="task-priority priority-${taskData.priority}">${taskData.priority.charAt(0).toUpperCase() + taskData.priority.slice(1)}</span>
+    `;
+    
+    // Add due date if exists
+    if (taskData.dueDate) {
+        const dueDate = new Date(taskData.dueDate);
+        const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        taskHTML += `<span class="task-due-date">📅 ${formattedDate}</span>`;
+    }
+    
+    // Add recurring indicator
+    if (taskData.recurring) {
+        taskHTML += `<span class="task-recurring">🔁</span>`;
+    }
+    
+    // Add checklist indicator if has items
+    if (taskData.checklist && taskData.checklist.length > 0) {
+        const completedCount = taskData.checklist.filter(item => item.checked).length;
+        taskHTML += `<span class="task-checklist">📋 ${completedCount}/${taskData.checklist.length}</span>`;
+    }
+    
+    taskHTML += `
             </div>
         </div>
-        <span class="xp-reward">${xp} XP</span>
+        <span class="xp-reward">${taskData.xp} XP</span>
     `;
+    
+    newTask.innerHTML = taskHTML;
     
     tasksContainer.appendChild(newTask);
     

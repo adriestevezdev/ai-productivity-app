@@ -195,41 +195,76 @@
     <!-- Add Task Modal -->
     <div class="modal" id="taskModal">
         <div class="modal-content task-modal">
-            <h2>New Task</h2>
+            <h2>Create Task</h2>
             <form id="taskForm">
                 <div class="form-group">
-                    <label>Task Name:</label>
-                    <input type="text" id="taskName" class="pixel-input" required>
+                    <label>Task Name</label>
+                    <input type="text" id="taskName" class="pixel-input" placeholder="Enter task name..." required>
                 </div>
                 
-                <div class="form-group">
-                    <label>Category:</label>
-                    <div class="category-select">
-                        <button type="button" class="category-option" data-category="work">💼 Work</button>
-                        <button type="button" class="category-option" data-category="personal">🏠 Personal</button>
-                        <button type="button" class="category-option" data-category="health">💪 Health</button>
-                        <button type="button" class="category-option" data-category="learning">📚 Learning</button>
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label>Due Date</label>
+                        <input type="date" id="taskDueDate" class="pixel-input">
+                    </div>
+                    
+                    <div class="form-group half-width">
+                        <label>Importance <span id="importanceValue">50</span></label>
+                        <div class="importance-slider-container">
+                            <div class="importance-labels">
+                                <span class="importance-label">Min</span>
+                                <span class="importance-label">Low</span>
+                                <span class="importance-label active">Med</span>
+                                <span class="importance-label">High</span>
+                                <span class="importance-label">Max</span>
+                            </div>
+                            <input type="range" id="taskImportance" class="importance-slider" min="0" max="100" value="50" step="25">
+                        </div>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Priority:</label>
-                    <div class="priority-select">
-                        <button type="button" class="priority-option" data-priority="low" data-xp="10">
-                            Low (10 XP)
-                        </button>
-                        <button type="button" class="priority-option active" data-priority="medium" data-xp="20">
-                            Medium (20 XP)
-                        </button>
-                        <button type="button" class="priority-option" data-priority="high" data-xp="30">
-                            High (30 XP)
-                        </button>
+                    <label>Description</label>
+                    <textarea id="taskDescription" class="pixel-input pixel-textarea" rows="3" placeholder="Add more context about this task..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Checklist Items</label>
+                    <div class="checklist-container">
+                        <div class="checklist-input-wrapper">
+                            <input type="text" id="checklistInput" class="pixel-input" placeholder="Add checklist item...">
+                            <button type="button" class="pixel-button small" onclick="addChecklistItem()">+</button>
+                        </div>
+                        <div id="checklistItems" class="checklist-items"></div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label>Project</label>
+                        <select id="taskProject" class="pixel-input pixel-select">
+                            <option value="">No Project</option>
+                            <option value="work">💼 Work</option>
+                            <option value="personal">🏠 Personal</option>
+                            <option value="health">💪 Health</option>
+                            <option value="learning">📚 Learning</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group half-width">
+                        <label>Recurring</label>
+                        <div class="recurring-toggle">
+                            <label class="pixel-switch">
+                                <input type="checkbox" id="taskRecurring">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="modal-actions">
-                    <button type="submit" class="pixel-button">Create Task</button>
                     <button type="button" class="pixel-button cancel" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="pixel-button">Create Task</button>
                 </div>
             </form>
         </div>
