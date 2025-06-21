@@ -60,12 +60,12 @@
   - [X] Campos: título, descripción, prioridad, fecha vencimiento, categoría, etiquetas
   - [X] Validación en tiempo real
   - [X] Integración con endpoints existentes de tareas
-- [ ] **Modal para crear proyectos/goals:**
-  - [ ] Componente modal para crear proyectos
-  - [ ] Formulario con campos SMART (título, descripción, tipo, fecha objetivo, métricas)
-  - [ ] Integración con API de goals existente
-  - [ ] Validación y feedback visual
-  - [ ] Selector de icono y color para el proyecto
+- [X] **Modal para crear proyectos/goals:**
+  - [X] Componente modal para crear proyectos
+  - [X] Formulario con campos SMART (título, descripción, tipo, fecha objetivo, métricas)
+  - [X] Integración con API de goals existente
+  - [X] Validación y feedback visual
+  - [X] Selector de icono y color para el proyecto
 - [ ] **Crear tareas con IA (OpenAI):**
   - [ ] Integración con OpenAI API
   - [ ] Input de texto natural para descripción de tarea

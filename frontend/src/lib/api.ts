@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/nextjs';
+import { useMemo } from 'react';
 
 export interface ApiConfig {
   baseURL?: string;
@@ -135,11 +136,15 @@ export class ApiClient {
 export function useApiClient() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   
-  const client = new ApiClient();
-  
-  if (isLoaded && isSignedIn) {
-    client.setTokenGetter(getToken);
-  }
+  const client = useMemo(() => {
+    const apiClient = new ApiClient();
+    
+    if (isLoaded && isSignedIn) {
+      apiClient.setTokenGetter(getToken);
+    }
+    
+    return apiClient;
+  }, [isLoaded, isSignedIn, getToken]);
   
   return client;
 }

@@ -6,7 +6,6 @@ import {
   Task,
   TaskCreate,
   TaskUpdate,
-  TaskStatusUpdate,
   TaskPositionUpdate,
   TaskList,
   TaskCategory,

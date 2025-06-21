@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Task, TaskCategory, TaskTag, TaskStatus, Goal, GoalType, GoalStatus } from '@/types/task';
 import { useTasks } from '@/hooks/use-tasks';
 import { TaskForm } from '@/components/task-form';
+import { GoalForm } from '@/components/goal-form';
 import { useAuth } from '@clerk/nextjs';
 import { ChevronRightIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 
@@ -26,21 +27,16 @@ export default function DashboardPage() {
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [personalExpanded, setPersonalExpanded] = useState(true);
   const [teamExpanded, setTeamExpanded] = useState(true);
   const [chatsExpanded, setChatsExpanded] = useState(true);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{type: 'user' | 'assistant', content: string}>>([]);
 
-  // Load initial data
-  useEffect(() => {
-    if (authLoaded && isSignedIn) {
-      loadData();
-    }
-  }, [authLoaded, isSignedIn]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [tasksData, categoriesData, tagsData, goalsData] = await Promise.all([
         getTasks(),
@@ -117,7 +113,14 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Failed to load data:', error);
     }
-  };
+  }, [getTasks, getCategories, getTags, getGoals, user?.id]);
+
+  // Load initial data
+  useEffect(() => {
+    if (authLoaded && isSignedIn) {
+      loadData();
+    }
+  }, [authLoaded, isSignedIn, loadData]);
 
   const handleTaskCreate = async () => {
     setShowTaskForm(false);
@@ -138,6 +141,23 @@ export default function DashboardPage() {
 
   const handleTaskDelete = async (taskId: number) => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
+  const handleGoalCreate = async () => {
+    setShowGoalForm(false);
+    await loadData();
+  };
+
+  const handleGoalUpdate = async (updatedGoal?: Goal) => {
+    if (updatedGoal) {
+      setGoals(prev => prev.map(goal => 
+        goal.id === updatedGoal.id ? updatedGoal : goal
+      ));
+    } else {
+      // If no updatedGoal provided, refresh the data
+      await loadData();
+    }
+    setEditingGoal(null);
   };
 
   const handleChatSubmit = (e: React.FormEvent) => {
@@ -207,10 +227,19 @@ export default function DashboardPage() {
               <PlusIcon className="w-4 h-4 ml-auto" />
             </button>
             {personalExpanded && (
-              <div className="ml-8 mt-1">
-                <button className="w-full text-left px-3 py-1 text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
+              <div className="ml-8 mt-1 space-y-1">
+                <button 
+                  onClick={() => setShowGoalForm(true)}
+                  className="w-full text-left px-3 py-1 text-sm text-[#606060] hover:text-[#A0A0A0] transition-all"
+                >
                   + New project
                 </button>
+                {goals.map(goal => (
+                  <div key={goal.id} className="px-3 py-1 flex items-center gap-2 text-sm text-[#A0A0A0] hover:text-white transition-all cursor-pointer">
+                    <span>{goal.icon}</span>
+                    <span className="truncate">{goal.title}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -557,6 +586,28 @@ export default function DashboardPage() {
                   setEditingTask(null);
                 }}
                 isEdit={!!editingTask}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goal form modal */}
+      {(showGoalForm || editingGoal) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
+          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-white mb-6">
+                {editingGoal ? 'Edit Project' : 'Create New Project'}
+              </h2>
+              <GoalForm
+                initialData={editingGoal || undefined}
+                onSubmit={editingGoal ? () => handleGoalUpdate() : handleGoalCreate}
+                onCancel={() => {
+                  setShowGoalForm(false);
+                  setEditingGoal(null);
+                }}
+                isEdit={!!editingGoal}
               />
             </div>
           </div>
