@@ -28,15 +28,15 @@ export function TaskForm({
   const [showPreview, setShowPreview] = useState(false);
   
   const [formData, setFormData] = useState<TaskCreate>({
-    title: initialData.title || '',
-    description: initialData.description || '',
-    status: initialData.status || TaskStatus.TODO,
-    priority: initialData.priority || TaskPriority.MEDIUM,
-    due_date: initialData.due_date || '',
-    estimated_hours: initialData.estimated_hours || undefined,
-    category_id: initialData.category_id || undefined,
-    parent_task_id: initialData.parent_task_id || undefined,
-    tag_ids: initialData.tag_ids || [],
+    title: initialData.title ?? '',
+    description: initialData.description ?? '',
+    status: initialData.status ?? TaskStatus.TODO,
+    priority: initialData.priority ?? TaskPriority.MEDIUM,
+    due_date: initialData.due_date ?? '',
+    estimated_hours: initialData.estimated_hours ?? undefined,
+    category_id: initialData.category_id ?? undefined,
+    parent_task_id: initialData.parent_task_id ?? undefined,
+    tag_ids: initialData.tag_ids ?? [],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -205,7 +205,7 @@ export function TaskForm({
             type="datetime-local"
             id="due_date"
             name="due_date"
-            value={formData.due_date}
+            value={formData.due_date ?? ''}
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           />
@@ -219,7 +219,7 @@ export function TaskForm({
             type="number"
             id="estimated_hours"
             name="estimated_hours"
-            value={formData.estimated_hours || ''}
+            value={formData.estimated_hours ?? ''}
             onChange={handleChange}
             min="0"
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
@@ -237,7 +237,7 @@ export function TaskForm({
           <select
             id="category_id"
             name="category_id"
-            value={formData.category_id || ''}
+            value={formData.category_id ?? ''}
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           >

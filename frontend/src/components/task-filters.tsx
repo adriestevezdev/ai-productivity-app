@@ -31,7 +31,7 @@ export function TaskFiltersComponent({
         <input
           type="text"
           placeholder="Search tasks..."
-          value={filters.search || ''}
+          value={filters.search ?? ''}
           onChange={(e) => handleFilterChange('search', e.target.value)}
           className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] placeholder-[#A0A0A0]"
         />
@@ -39,7 +39,7 @@ export function TaskFiltersComponent({
 
       {/* Status filter */}
       <select
-        value={filters.status || 'all'}
+        value={filters.status ?? 'all'}
         onChange={(e) => handleFilterChange('status', e.target.value)}
         className="bg-[#242426] text-white px-3 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4]"
       >
@@ -52,7 +52,7 @@ export function TaskFiltersComponent({
 
       {/* Priority filter */}
       <select
-        value={filters.priority || 'all'}
+        value={filters.priority ?? 'all'}
         onChange={(e) => handleFilterChange('priority', e.target.value)}
         className="bg-[#242426] text-white px-3 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4]"
       >
@@ -66,7 +66,7 @@ export function TaskFiltersComponent({
       {/* Category filter */}
       {categories.length > 0 && (
         <select
-          value={filters.category_id || 'all'}
+          value={filters.category_id ?? 'all'}
           onChange={(e) => handleFilterChange('category_id', e.target.value === 'all' ? null : Number(e.target.value))}
           className="bg-[#242426] text-white px-3 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4]"
         >
