@@ -16,7 +16,10 @@ import {
   TaskTagCreate,
   TaskTagUpdate,
   TaskFilters,
-  TaskStatus
+  TaskStatus,
+  Goal,
+  GoalCreate,
+  GoalUpdate
 } from '@/types/task';
 
 export function useTasks() {
@@ -234,6 +237,66 @@ export function useTasks() {
     }
   }, [api]);
 
+  // Goal operations
+  const getGoals = useCallback(async (): Promise<Goal[]> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.get<{goals: Goal[], total: number}>('/api/goals');
+      return data.goals || [];
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch goals';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  const createGoal = useCallback(async (goalData: GoalCreate): Promise<Goal> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.post<Goal>('/api/goals', goalData);
+      return data;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create goal';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  const updateGoal = useCallback(async (goalId: number, goalData: GoalUpdate): Promise<Goal> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.put<Goal>(`/api/goals/${goalId}`, goalData);
+      return data;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  const deleteGoal = useCallback(async (goalId: number): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/goals/${goalId}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete goal';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
   return {
     loading,
     error,
@@ -254,6 +317,11 @@ export function useTasks() {
     getTags,
     createTag,
     updateTag,
-    deleteTag
+    deleteTag,
+    // Goal operations
+    getGoals,
+    createGoal,
+    updateGoal,
+    deleteGoal
   };
 }

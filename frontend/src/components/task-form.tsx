@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { TaskCreate, TaskUpdate, TaskStatus, TaskPriority, TaskCategory, TaskTag } from '@/types/task';
+import { TaskCreate, TaskUpdate, TaskStatus, TaskPriority, TaskCategory, TaskTag, Goal } from '@/types/task';
 import { useTasks } from '@/hooks/use-tasks';
 
 interface TaskFormProps {
   initialData?: Partial<TaskCreate & { id?: number }>;
   categories: TaskCategory[];
   tags: TaskTag[];
+  goals: Goal[];
   onSubmit?: (data: TaskCreate | TaskUpdate) => void;
   onCancel?: () => void;
   isEdit?: boolean;
@@ -18,7 +19,8 @@ interface TaskFormProps {
 export function TaskForm({ 
   initialData = {}, 
   categories, 
-  tags, 
+  tags,
+  goals,
   onSubmit, 
   onCancel,
   isEdit = false 
@@ -26,6 +28,7 @@ export function TaskForm({
   const { createTask, updateTask } = useTasks();
   const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<TaskCreate>({
     title: initialData.title ?? '',
@@ -35,15 +38,41 @@ export function TaskForm({
     due_date: initialData.due_date ?? '',
     estimated_hours: initialData.estimated_hours ?? undefined,
     category_id: initialData.category_id ?? undefined,
+    goal_id: initialData.goal_id ?? undefined,
     parent_task_id: initialData.parent_task_id ?? undefined,
     tag_ids: initialData.tag_ids ?? [],
   });
 
+  // Validation function
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Task title is required';
+    } else if (formData.title.length > 200) {
+      newErrors.title = 'Task title must be less than 200 characters';
+    }
+    
+    if (formData.description && formData.description.length > 2000) {
+      newErrors.description = 'Description must be less than 2000 characters';
+    }
+    
+    if (formData.due_date && new Date(formData.due_date) < new Date()) {
+      newErrors.due_date = 'Due date cannot be in the past';
+    }
+    
+    if (formData.estimated_hours && (formData.estimated_hours < 0 || formData.estimated_hours > 1000)) {
+      newErrors.estimated_hours = 'Estimated hours must be between 0 and 1000';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim()) {
-      alert('Please enter a task title');
+    if (!validateForm()) {
       return;
     }
 
@@ -52,24 +81,26 @@ export function TaskForm({
       if (isEdit && initialData.id) {
         const updateData: TaskUpdate = {};
         // Only include changed fields
-        Object.keys(formData).forEach((key) => {
-          const k = key as keyof TaskCreate;
-          if (formData[k] !== initialData[k]) {
-            (updateData as any)[k] = formData[k];
+        (Object.keys(formData) as Array<keyof TaskCreate>).forEach((key) => {
+          if (formData[key] !== initialData[key]) {
+            (updateData as Record<string, unknown>)[key] = formData[key];
           }
         });
         
         if (Object.keys(updateData).length > 0) {
-          const updated = await updateTask(initialData.id, updateData);
+          await updateTask(initialData.id, updateData);
           onSubmit?.(updateData);
+        } else {
+          onCancel?.();
         }
       } else {
-        const created = await createTask(formData);
+        await createTask(formData);
         onSubmit?.(formData);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to save task:', error);
-      alert('Failed to save task. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save task. Please try again.';
+      setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +108,11 @@ export function TaskForm({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    
+    // Clear field-specific error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
     
     if (type === 'number') {
       setFormData(prev => ({
@@ -113,10 +149,15 @@ export function TaskForm({
           name="title"
           value={formData.title}
           onChange={handleChange}
-          className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
+          className={`w-full bg-[#242426] text-white px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+            errors.title 
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+              : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
+          }`}
           placeholder="Enter task title"
           required
         />
+        {errors.title && <p className="mt-1 text-sm text-red-400">{errors.title}</p>}
       </div>
 
       {/* Description with Markdown */}
@@ -147,10 +188,15 @@ export function TaskForm({
             value={formData.description}
             onChange={handleChange}
             rows={5}
-            className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20 resize-none"
+            className={`w-full bg-[#242426] text-white px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 resize-none transition-colors ${
+              errors.description 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
+            }`}
             placeholder="Enter task description (Markdown supported)"
           />
         )}
+        {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
         <p className="mt-1 text-xs text-[#A0A0A0]">
           Supports Markdown formatting: **bold**, *italic*, `code`, etc.
         </p>
@@ -207,8 +253,13 @@ export function TaskForm({
             name="due_date"
             value={formData.due_date ?? ''}
             onChange={handleChange}
-            className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
+            className={`w-full bg-[#242426] text-white px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+              errors.due_date 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
+            }`}
           />
+          {errors.due_date && <p className="mt-1 text-sm text-red-400">{errors.due_date}</p>}
         </div>
 
         <div>
@@ -222,14 +273,21 @@ export function TaskForm({
             value={formData.estimated_hours ?? ''}
             onChange={handleChange}
             min="0"
-            className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
+            max="1000"
+            className={`w-full bg-[#242426] text-white px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+              errors.estimated_hours 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
+            }`}
             placeholder="0"
           />
+          {errors.estimated_hours && <p className="mt-1 text-sm text-red-400">{errors.estimated_hours}</p>}
         </div>
       </div>
 
-      {/* Category */}
-      {categories.length > 0 && (
+      {/* Category and Project */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Category */}
         <div>
           <label htmlFor="category_id" className="block text-sm font-medium text-white mb-2">
             Category
@@ -249,7 +307,31 @@ export function TaskForm({
             ))}
           </select>
         </div>
-      )}
+
+        {/* Project/Goal */}
+        <div>
+          <label htmlFor="goal_id" className="block text-sm font-medium text-white mb-2">
+            Project
+          </label>
+          <select
+            id="goal_id"
+            name="goal_id"
+            value={formData.goal_id ?? ''}
+            onChange={handleChange}
+            className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
+          >
+            <option value="">No project</option>
+            {goals.map(goal => (
+              <option key={goal.id} value={goal.id}>
+                {goal.icon && `${goal.icon} `}{goal.title}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-[#A0A0A0]">
+            Assign this task to a specific project or goal
+          </p>
+        </div>
+      </div>
 
       {/* Tags */}
       {tags.length > 0 && (
@@ -287,6 +369,13 @@ export function TaskForm({
         </div>
       )}
 
+      {/* Error display */}
+      {errors.submit && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-sm text-red-400">{errors.submit}</p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-4 border-t border-white/8">
         <button
@@ -299,7 +388,7 @@ export function TaskForm({
         </button>
         <button
           type="submit"
-          className="px-6 py-2 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#FF5252] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           disabled={isLoading}
         >
           {isLoading ? 'Saving...' : (isEdit ? 'Update Task' : 'Create Task')}

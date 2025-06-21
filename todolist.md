@@ -55,6 +55,22 @@
 ## 🤖 Fase 3: Integración de IA Avanzada
 
 ### 1. Asistente de Productividad con OpenAI
+- [X] **Modal para crear tareas de forma manual:**
+  - [X] Componente modal con formulario completo
+  - [X] Campos: título, descripción, prioridad, fecha vencimiento, categoría, etiquetas
+  - [X] Validación en tiempo real
+  - [X] Integración con endpoints existentes de tareas
+- [ ] **Modal para crear proyectos/goals:**
+  - [ ] Componente modal para crear proyectos
+  - [ ] Formulario con campos SMART (título, descripción, tipo, fecha objetivo, métricas)
+  - [ ] Integración con API de goals existente
+  - [ ] Validación y feedback visual
+  - [ ] Selector de icono y color para el proyecto
+- [ ] **Crear tareas con IA (OpenAI):**
+  - [ ] Integración con OpenAI API
+  - [ ] Input de texto natural para descripción de tarea
+  - [ ] Procesamiento automático para extraer campos
+  - [ ] Vista previa antes de crear la tarea
 - [ ] **Generación automática de tareas:**
   - [ ] POST /api/ai/parse-task - Procesar texto natural a tareas
   - [ ] Extraer título, fecha, prioridad del lenguaje natural
@@ -65,10 +81,10 @@
   - [ ] Sugerir optimizaciones de flujo de trabajo
 
 ### 2. Sistema de Objetivos SMART
-- [ ] **Modelo Goal con métricas:**
-  - [ ] Específico, Medible, Alcanzable, Relevante, Temporal
-  - [ ] Vinculación de tareas a objetivos
-  - [ ] Tracking de progreso automático
+- [X] **Modelo Goal con métricas:**
+  - [X] Específico, Medible, Alcanzable, Relevante, Temporal
+  - [X] Vinculación de tareas a objetivos
+  - [X] Tracking de progreso automático
 - [ ] **IA para desglose de objetivos:**
   - [ ] POST /api/ai/break-down-goal - Crear plan de acción
   - [ ] Generar hitos y tareas intermedias

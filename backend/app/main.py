@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.tasks import router as tasks_router
+from app.api.goals import router as goals_router
 
 app = FastAPI(
     title="AI Productivity App API",
@@ -28,6 +29,7 @@ async def log_requests(request: Request, call_next):
 
 # Include routers
 app.include_router(tasks_router)
+app.include_router(goals_router)
 
 # Import and include AI router
 from app.api.task_ai import router as task_ai_router

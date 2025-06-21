@@ -57,6 +57,10 @@ class Task(Base, TimestampMixin, UserOwnedMixin):
     parent_task_id = Column(Integer, ForeignKey('tasks.id', ondelete='CASCADE'))
     parent_task = relationship("Task", remote_side=[id], backref="subtasks")
     
+    # Goal relationship
+    goal_id = Column(Integer, ForeignKey('goals.id', ondelete='SET NULL'))
+    goal = relationship("Goal", back_populates="tasks")
+    
     # AI-related fields
     ai_score = Column(Integer)  # AI-calculated priority score (0-100)
     ai_suggestions = Column(Text)  # JSON field for AI suggestions

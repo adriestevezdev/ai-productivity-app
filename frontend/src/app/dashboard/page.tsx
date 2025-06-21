@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Task, TaskCategory, TaskTag, TaskStatus } from '@/types/task';
+import { Task, TaskCategory, TaskTag, TaskStatus, Goal, GoalType, GoalStatus } from '@/types/task';
 import { useTasks } from '@/hooks/use-tasks';
 import { TaskForm } from '@/components/task-form';
 import { useAuth } from '@clerk/nextjs';
@@ -15,14 +15,16 @@ export default function DashboardPage() {
     getTasks,
     getCategories,
     getTags,
+    getGoals,
     updateTaskStatus,
-    loading,
+    deleteTask,
     error
   } = useTasks();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [tags, setTags] = useState<TaskTag[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [personalExpanded, setPersonalExpanded] = useState(true);
@@ -40,15 +42,78 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     try {
-      const [tasksData, categoriesData, tagsData] = await Promise.all([
+      const [tasksData, categoriesData, tagsData, goalsData] = await Promise.all([
         getTasks(),
         getCategories(),
-        getTags()
+        getTags(),
+        getGoals().catch(() => {
+          // Fallback to sample goals if API not available yet
+          return [
+            {
+              id: 1,
+              title: "AI Productivity App",
+              description: "Build a comprehensive productivity app with AI features",
+              goal_type: GoalType.PROFESSIONAL,
+              status: GoalStatus.ACTIVE,
+              target_date: "2024-12-31",
+              is_specific: true,
+              is_measurable: true,
+              is_achievable: true,
+              is_relevant: true,
+              is_time_bound: true,
+              smart_score: 95,
+              progress_percentage: 60,
+              color: "#4ECDC4",
+              icon: "🚀",
+              user_id: user?.id || "",
+              created_at: new Date().toISOString(),
+            },
+            {
+              id: 2,
+              title: "Health & Fitness",
+              description: "Improve overall health and fitness level",
+              goal_type: GoalType.HEALTH,
+              status: GoalStatus.ACTIVE,
+              target_date: "2024-06-30",
+              is_specific: true,
+              is_measurable: true,
+              is_achievable: true,
+              is_relevant: true,
+              is_time_bound: true,
+              smart_score: 85,
+              progress_percentage: 40,
+              color: "#FF6B6B",
+              icon: "💪",
+              user_id: user?.id || "",
+              created_at: new Date().toISOString(),
+            },
+            {
+              id: 3,
+              title: "Learn Machine Learning",
+              description: "Master ML concepts and implement real projects",
+              goal_type: GoalType.LEARNING,
+              status: GoalStatus.ACTIVE,
+              target_date: "2024-09-30",
+              is_specific: true,
+              is_measurable: true,
+              is_achievable: true,
+              is_relevant: true,
+              is_time_bound: true,
+              smart_score: 90,
+              progress_percentage: 25,
+              color: "#FFE66D",
+              icon: "🧠",
+              user_id: user?.id || "",
+              created_at: new Date().toISOString(),
+            }
+          ] as Goal[];
+        })
       ]);
       
       setTasks(tasksData.tasks);
       setCategories(categoriesData);
       setTags(tagsData);
+      setGoals(goalsData);
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -59,10 +124,15 @@ export default function DashboardPage() {
     await loadData();
   };
 
-  const handleTaskUpdate = async (updatedTask: Task) => {
-    setTasks(prev => prev.map(task => 
-      task.id === updatedTask.id ? updatedTask : task
-    ));
+  const handleTaskUpdate = async (updatedTask?: Task) => {
+    if (updatedTask) {
+      setTasks(prev => prev.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      ));
+    } else {
+      // If no updatedTask provided, refresh the data
+      await loadData();
+    }
     setEditingTask(null);
   };
 
@@ -304,103 +374,168 @@ export default function DashboardPage() {
       </main>
 
       {/* Right Tasks Sidebar */}
-      <aside className="w-80 bg-[#1A1A1C] border-l border-white/10 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">productiv.ai</h2>
-          <div className="flex items-center gap-2">
-            <button className="p-1 text-[#606060] hover:text-white transition-all">
+      <aside className="w-80 bg-[#1A1A1C] border-l border-white/10 flex flex-col h-screen">
+        {/* Fixed Header */}
+        <div className="p-6 pb-0 flex-shrink-0">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white">productiv.ai</h2>
+            <div className="flex items-center gap-2">
+              <button className="p-1 text-[#606060] hover:text-white transition-all">
+                <PlusIcon className="w-5 h-5" />
+              </button>
+              <button className="p-1 text-[#606060] hover:text-white transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              <button className="p-1 text-[#606060] hover:text-white transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </button>
+              <span className="text-xs text-[#606060] bg-[#242426] px-2 py-1 rounded">{tasks.length}</span>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <button className="flex items-center gap-2 text-sm text-[#A0A0A0]">
+              <span className="text-[#606060]">●</span>
+              All Personal Tasks
+              <ChevronDownIcon className="w-4 h-4 ml-auto" />
+            </button>
+          </div>
+
+          {/* Create Task Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowTaskForm(true)}
+              className="w-full flex items-center gap-2 px-4 py-3 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-all font-medium"
+            >
               <PlusIcon className="w-5 h-5" />
+              Create Task
             </button>
-            <button className="p-1 text-[#606060] hover:text-white transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-            <button className="p-1 text-[#606060] hover:text-white transition-all">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </button>
-            <span className="text-xs text-[#606060] bg-[#242426] px-2 py-1 rounded">0 1</span>
           </div>
         </div>
 
-        <div className="mb-4">
-          <button className="flex items-center gap-2 text-sm text-[#A0A0A0]">
-            <span className="text-[#606060]">●</span>
-            All Personal Tasks
-            <ChevronDownIcon className="w-4 h-4 ml-auto" />
-          </button>
-        </div>
-
-        {/* Tasks List */}
-        <div className="space-y-2">
-          {tasks.length === 0 ? (
-            <div className="text-center py-8 text-[#606060]">
-              <p className="text-sm">No tasks yet</p>
-              <p className="text-xs mt-1">Tasks created in chat will appear here</p>
-            </div>
-          ) : (
-            tasks.map(task => (
-              <div
-                key={task.id}
-                className="p-3 bg-[#242426] rounded-lg hover:bg-[#2A2A2C] transition-all cursor-pointer"
-              >
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={task.status === TaskStatus.COMPLETED}
-                    onChange={async () => {
-                      const newStatus = task.status === TaskStatus.COMPLETED ? TaskStatus.TODO : TaskStatus.COMPLETED;
-                      try {
-                        const updatedTask = await updateTaskStatus(task.id, newStatus);
-                        handleTaskUpdate(updatedTask);
-                      } catch (error) {
-                        console.error('Failed to update task status:', error);
-                      }
-                    }}
-                    className="mt-1 rounded border-[#606060] bg-transparent"
-                  />
-                  <div className="flex-1">
-                    <h3 className={`text-sm ${task.status === TaskStatus.COMPLETED ? 'text-[#606060] line-through' : 'text-white'}`}>
-                      {task.title}
-                    </h3>
-                    {task.description && (
-                      <p className="text-xs text-[#606060] mt-1">{task.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      {task.priority && (
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          task.priority === 'high' 
-                            ? 'bg-red-500/20 text-red-400'
-                            : task.priority === 'medium'
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-green-500/20 text-green-400'
-                        }`}>
-                          {task.priority}
-                        </span>
+        {/* Scrollable Tasks List */}
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-2">
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-[#606060]">
+                <p className="text-sm">No tasks yet</p>
+                <p className="text-xs mt-1">Tasks created in chat will appear here</p>
+              </div>
+            ) : (
+              tasks.map(task => (
+                <div
+                  key={task.id}
+                  className="group p-3 bg-[#242426] rounded-lg hover:bg-[#2A2A2C] transition-all cursor-pointer relative"
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={task.status === TaskStatus.COMPLETED}
+                      onChange={async () => {
+                        const newStatus = task.status === TaskStatus.COMPLETED ? TaskStatus.TODO : TaskStatus.COMPLETED;
+                        try {
+                          const updatedTask = await updateTaskStatus(task.id, newStatus);
+                          handleTaskUpdate(updatedTask);
+                        } catch (error) {
+                          console.error('Failed to update task status:', error);
+                        }
+                      }}
+                      className="mt-1 rounded border-[#606060] bg-transparent"
+                    />
+                    <div className="flex-1">
+                      <h3 className={`text-sm ${task.status === TaskStatus.COMPLETED ? 'text-[#606060] line-through' : 'text-white'}`}>
+                        {task.title}
+                      </h3>
+                      {task.description && (
+                        <p className="text-xs text-[#606060] mt-1 line-clamp-2">{task.description}</p>
                       )}
-                      {task.due_date && (
-                        <span className="text-xs text-[#606060]">
-                          Due {new Date(task.due_date).toLocaleDateString()}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {task.goal && (
+                          <span 
+                            className="text-xs px-2 py-0.5 rounded"
+                            style={{
+                              backgroundColor: task.goal.color ? `${task.goal.color}20` : 'rgba(78, 205, 196, 0.2)',
+                              color: task.goal.color || '#4ECDC4'
+                            }}
+                          >
+                            {task.goal.icon && `${task.goal.icon} `}{task.goal.title}
+                          </span>
+                        )}
+                        {task.priority && (
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            task.priority === 'high' 
+                              ? 'bg-red-500/20 text-red-400'
+                              : task.priority === 'medium'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        )}
+                        {task.due_date && (
+                          <span className="text-xs text-[#606060]">
+                            Due {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Action buttons - visible on hover */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingTask(task);
+                        }}
+                        className="p-1 text-[#606060] hover:text-[#4ECDC4] transition-colors"
+                        title="Edit task"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm('Are you sure you want to delete this task?')) {
+                            try {
+                              await deleteTask(task.id);
+                              handleTaskDelete(task.id);
+                            } catch (error) {
+                              console.error('Failed to delete task:', error);
+                            }
+                          }
+                        }}
+                        className="p-1 text-[#606060] hover:text-red-400 transition-colors"
+                        title="Delete task"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Completed tasks toggle */}
-        {tasks.some(t => t.status === TaskStatus.COMPLETED) && (
-          <div className="mt-6 pt-4 border-t border-white/10">
-            <button className="text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
-              completed tasks
-            </button>
-          </div>
-        )}
+        {/* Fixed Footer */}
+        <div className="p-6 pt-0 flex-shrink-0">
+          {/* Completed tasks toggle */}
+          {tasks.some(t => t.status === TaskStatus.COMPLETED) && (
+            <div className="pt-4 border-t border-white/10">
+              <button className="text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
+                completed tasks
+              </button>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Task form modal */}
@@ -415,7 +550,8 @@ export default function DashboardPage() {
                 initialData={editingTask || undefined}
                 categories={categories}
                 tags={tags}
-                onSubmit={editingTask ? () => handleTaskUpdate(editingTask) : handleTaskCreate}
+                goals={goals}
+                onSubmit={editingTask ? () => handleTaskUpdate() : handleTaskCreate}
                 onCancel={() => {
                   setShowTaskForm(false);
                   setEditingTask(null);

@@ -13,6 +13,7 @@ class TaskBase(BaseModel):
     estimated_hours: Optional[int] = Field(None, ge=0)
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
+    goal_id: Optional[int] = None
 
 
 class TaskCreate(TaskBase):
@@ -29,6 +30,7 @@ class TaskUpdate(BaseModel):
     actual_hours: Optional[int] = Field(None, ge=0)
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
+    goal_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
 
 

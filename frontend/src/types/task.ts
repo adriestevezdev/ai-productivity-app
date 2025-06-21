@@ -31,6 +31,43 @@ export interface TaskCategory {
   updated_at?: string;
 }
 
+export enum GoalType {
+  PERSONAL = "personal",
+  PROFESSIONAL = "professional",
+  HEALTH = "health",
+  LEARNING = "learning",
+  FINANCIAL = "financial",
+  OTHER = "other"
+}
+
+export enum GoalStatus {
+  ACTIVE = "active",
+  COMPLETED = "completed",
+  PAUSED = "paused",
+  CANCELLED = "cancelled"
+}
+
+export interface Goal {
+  id: number;
+  title: string;
+  description?: string;
+  goal_type: GoalType;
+  status: GoalStatus;
+  target_date?: string;
+  is_specific: boolean;
+  is_measurable: boolean;
+  is_achievable: boolean;
+  is_relevant: boolean;
+  is_time_bound: boolean;
+  smart_score: number;
+  progress_percentage: number;
+  color?: string;
+  icon?: string;
+  user_id: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -44,6 +81,8 @@ export interface Task {
   position: number;
   category_id?: number;
   category?: TaskCategory;
+  goal_id?: number;
+  goal?: Goal;
   parent_task_id?: number;
   tags: TaskTag[];
   ai_score?: number;
@@ -61,6 +100,7 @@ export interface TaskCreate {
   due_date?: string;
   estimated_hours?: number;
   category_id?: number;
+  goal_id?: number;
   parent_task_id?: number;
   tag_ids?: number[];
 }
@@ -74,6 +114,7 @@ export interface TaskUpdate {
   estimated_hours?: number;
   actual_hours?: number;
   category_id?: number;
+  goal_id?: number;
   parent_task_id?: number;
   tag_ids?: number[];
 }
@@ -115,6 +156,31 @@ export interface TaskTagCreate {
 export interface TaskTagUpdate {
   name?: string;
   color?: string;
+}
+
+export interface GoalCreate {
+  title: string;
+  description?: string;
+  goal_type: GoalType;
+  target_date?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface GoalUpdate {
+  title?: string;
+  description?: string;
+  goal_type?: GoalType;
+  status?: GoalStatus;
+  target_date?: string;
+  is_specific?: boolean;
+  is_measurable?: boolean;
+  is_achievable?: boolean;
+  is_relevant?: boolean;
+  is_time_bound?: boolean;
+  progress_percentage?: number;
+  color?: string;
+  icon?: string;
 }
 
 // Helper types for UI
