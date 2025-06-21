@@ -12,6 +12,7 @@ AI Productivity App - A productivity management application with AI-powered feat
 
 ```bash
 # Start all services (frontend, backend, database, adminer)
+# This automatically runs migrations and seeds the database with sample data
 docker compose up
 
 # Start services in background
@@ -23,6 +24,12 @@ docker compose logs -f [service-name]
 # Rebuild after dependency changes
 docker compose build [service-name]
 docker compose up --build
+
+# Run database seed manually (if needed)
+docker compose exec backend python scripts/seed_tasks.py
+
+# Set custom user ID for seeding (optional)
+# Add SEED_USER_ID=user_your_clerk_id to .env file
 ```
 
 ### Frontend Development
@@ -97,6 +104,8 @@ The application uses a microservices approach with Docker Compose:
 - **Base Models**: All models inherit from `BaseDBModel` with `created_at`, `updated_at`, `user_id`
 - **User Isolation**: Every query filters by `user_id` from JWT claims
 - **Migrations**: Alembic manages schema changes with version control
+- **Automatic Initialization**: Database migrations and sample data seeding run automatically on `docker compose up`
+- **Seed Data**: Sample tasks, categories, and tags are created for development (configurable via `SEED_USER_ID`)
 
 ### Frontend Structure
 
@@ -140,6 +149,9 @@ Required variables (see .env.example):
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk public key for frontend
 - `CLERK_SECRET_KEY`: Clerk secret for backend JWT validation
 - `DATABASE_URL`: PostgreSQL connection string (set in docker-compose)
+
+Optional variables:
+- `SEED_USER_ID`: Clerk user ID for database seeding (defaults to sample ID)
 
 ### Current State & Next Steps
 

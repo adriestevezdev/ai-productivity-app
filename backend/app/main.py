@@ -1,11 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.api.tasks import router as tasks_router
 
 app = FastAPI(
-    title="FacturSaaS API",
-    description="API para sistema de facturación multi-tenant",
-    version="0.1.0"
+    title="AI Productivity App API",
+    description="API for AI-powered productivity management",
+    version="0.2.0"
 )
 
 # Configure CORS
@@ -17,9 +18,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Request path: {request.url.path}")
+    print(f"Request headers: {dict(request.headers)}")
+    response = await call_next(request)
+    return response
+
+# Include routers
+app.include_router(tasks_router)
+
+# Import and include AI router
+from app.api.task_ai import router as task_ai_router
+app.include_router(task_ai_router)
+
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to FacturSaaS API"}
+    return {"message": "Welcome to AI Productivity App API"}
 
 @app.get("/health")
 def health_check():

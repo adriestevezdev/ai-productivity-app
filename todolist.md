@@ -24,31 +24,31 @@
 
 ---
 
-## 📋 Fase 2: Sistema de Tareas con IA
+## 📋 Fase 2: Sistema de Tareas con IA ✅
 
 ### 1. CRUD de Tareas (Protegido por Usuario)
-- [ ] **Modelos de datos:**
-  - [ ] Task: título, descripción, prioridad, estado, fecha_vencimiento, etiquetas
-  - [ ] TaskCategory: categorías personalizadas por usuario
-  - [ ] TaskTag: sistema de etiquetado flexible
-- [ ] **API endpoints en Backend:**
-  - [ ] GET /api/tasks - Solo tareas del usuario autenticado
-  - [ ] POST /api/tasks - Crear tarea con `user_id` automático
-  - [ ] PUT /api/tasks/{id} - Actualizar (verificar pertenencia)
-  - [ ] DELETE /api/tasks/{id} - Eliminar (verificar pertenencia)
-  - [ ] PATCH /api/tasks/{id}/status - Cambiar estado rápido
-- [ ] **Interfaz en Frontend:**
-  - [ ] Vista Kanban drag-and-drop
-  - [ ] Vista lista con filtros avanzados
-  - [ ] Formulario de creación rápida
-  - [ ] Editor de tareas con markdown
+- [X] **Modelos de datos:**
+  - [X] Task: título, descripción, prioridad, estado, fecha_vencimiento, etiquetas
+  - [X] TaskCategory: categorías personalizadas por usuario
+  - [X] TaskTag: sistema de etiquetado flexible
+- [X] **API endpoints en Backend:**
+  - [X] GET /api/tasks - Solo tareas del usuario autenticado
+  - [X] POST /api/tasks - Crear tarea con `user_id` automático
+  - [X] PUT /api/tasks/{id} - Actualizar (verificar pertenencia)
+  - [X] DELETE /api/tasks/{id} - Eliminar (verificar pertenencia)
+  - [X] PATCH /api/tasks/{id}/status - Cambiar estado rápido
+- [X] **Interfaz en Frontend:**
+  - [X] Vista Kanban drag-and-drop
+  - [X] Vista lista con filtros avanzados
+  - [X] Formulario de creación rápida
+  - [X] Editor de tareas con markdown
 
 ### 2. Sistema de Priorización Inteligente
-- [ ] **Algoritmo de scoring basado en:**
-  - [ ] Urgencia (fecha vencimiento)
-  - [ ] Importancia (definida por usuario)
-  - [ ] Tiempo estimado vs disponible
-  - [ ] Dependencias entre tareas
+- [X] **Algoritmo de scoring basado en:**
+  - [X] Urgencia (fecha vencimiento)
+  - [X] Importancia (definida por usuario)
+  - [X] Tiempo estimado vs disponible
+  - [ ] Dependencias entre tareas (pendiente para fase futura)
 
 ---
 

@@ -1,5 +1,3 @@
-from app.models.cliente import Cliente
-from app.models.producto import Producto
-from app.models.factura import Factura, LineaFactura, EstadoFactura
+from app.models.task import Task, TaskCategory, TaskTag, TaskStatus, TaskPriority
 
-__all__ = ["Cliente", "Producto", "Factura", "LineaFactura", "EstadoFactura"]
+__all__ = ["Task", "TaskCategory", "TaskTag", "TaskStatus", "TaskPriority"]
