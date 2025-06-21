@@ -15,12 +15,12 @@
 - ✅ Configurar SQLAlchemy y conexión a PostgreSQL
 - ✅ Crear modelos base con `user_id` vinculado a Clerk
 
-### 3. ⏳ Configurar Frontend Next.js con Clerk
-- ⏳ Instalar @clerk/nextjs
-- ⏳ Configurar ClerkProvider en layout
-- ⏳ Proteger rutas con middleware
-- ⏳ Configurar Axios/Fetch para llamadas API con auth headers
-- ⏳ Layout base con navegación y componente de usuario
+### 3. ✅ Configurar Frontend Next.js con Clerk
+- ✅ Instalar @clerk/nextjs
+- ✅ Configurar ClerkProvider en layout
+- ✅ Proteger rutas con middleware
+- ✅ Configurar Axios/Fetch para llamadas API con auth headers
+- ✅ Layout base con navegación y componente de usuario
 
 ---
 
@@ -49,9 +49,6 @@
   - [ ] Importancia (definida por usuario)
   - [ ] Tiempo estimado vs disponible
   - [ ] Dependencias entre tareas
-- [ ] **API endpoint para sugerencias:**
-  - [ ] GET /api/tasks/suggestions - Top 5 tareas recomendadas
-  - [ ] POST /api/tasks/reorder - Reordenar basado en IA
 
 ---
 
