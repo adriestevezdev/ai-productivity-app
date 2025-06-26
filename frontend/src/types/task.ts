@@ -119,6 +119,15 @@ export interface TaskUpdate {
   tag_ids?: number[];
 }
 
+export interface TaskAICreate {
+  title: string;
+  description?: string;
+  priority: TaskPriority | string;
+  due_date?: string;
+  estimated_duration?: number;
+  tags?: string[];
+}
+
 export interface TaskStatusUpdate {
   status: TaskStatus;
 }

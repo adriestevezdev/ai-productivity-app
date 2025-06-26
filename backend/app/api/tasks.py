@@ -19,8 +19,10 @@ from app.schemas.task import (
     TaskCategoryUpdate,
     TaskTag as TaskTagSchema,
     TaskTagCreate,
-    TaskTagUpdate
+    TaskTagUpdate,
+    TaskAICreate
 )
+from app.services.ai_service import get_ai_service
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
@@ -122,6 +124,104 @@ async def create_task(
     db.refresh(task)
     
     # Load relationships
+    db.refresh(task, ["tags", "category"])
+    
+    return task
+
+
+@router.post("/tasks/parse-ai", response_model=TaskAICreate)
+async def parse_task_with_ai(
+    description: str = Query(..., description="Natural language task description"),
+    current_user: str = Depends(get_current_user)
+):
+    """Parse natural language task description using AI"""
+    ai_service = get_ai_service()
+    if not ai_service:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service not configured. Please set OPENAI_API_KEY."
+        )
+    
+    try:
+        parsed_task = ai_service.parse_natural_language_task(description)
+        return parsed_task
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing task with AI: {str(e)}"
+        )
+
+
+@router.post("/tasks/create-from-ai", response_model=TaskSchema)
+async def create_task_from_ai(
+    ai_task: TaskAICreate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    """Create a task from AI-parsed data"""
+    # Convert AI task to regular task create
+    task_data = TaskCreate(
+        title=ai_task.title,
+        description=ai_task.description,
+        priority=TaskPriority(ai_task.priority) if isinstance(ai_task.priority, str) else ai_task.priority,
+        due_date=datetime.fromisoformat(ai_task.due_date.replace('Z', '+00:00')) if isinstance(ai_task.due_date, str) else ai_task.due_date,
+        estimated_hours=ai_task.estimated_duration // 60 if ai_task.estimated_duration else None,
+        tag_ids=[]
+    )
+    
+    # Handle tags - create new ones if needed
+    tag_ids = []
+    if ai_task.tags:
+        for tag_name in ai_task.tags:
+            # Check if tag exists
+            tag = db.query(TaskTag).filter(
+                and_(
+                    TaskTag.name == tag_name,
+                    TaskTag.user_id == current_user
+                )
+            ).first()
+            
+            if not tag:
+                # Create new tag
+                tag = TaskTag(
+                    name=tag_name,
+                    user_id=current_user
+                )
+                db.add(tag)
+                db.commit()
+                db.refresh(tag)
+            
+            tag_ids.append(tag.id)
+    
+    task_data.tag_ids = tag_ids
+    
+    # Create the task using existing logic
+    max_position = db.query(Task).filter(
+        and_(Task.user_id == current_user, Task.status == task_data.status)
+    ).count()
+    
+    task_dict = task_data.model_dump(exclude={"tag_ids"})
+    task = Task(
+        **task_dict,
+        user_id=current_user,
+        position=max_position,
+        ai_score=90  # Mark as AI-created with high confidence
+    )
+    
+    # Add tags
+    if tag_ids:
+        tags = db.query(TaskTag).filter(
+            and_(
+                TaskTag.id.in_(tag_ids),
+                TaskTag.user_id == current_user
+            )
+        ).all()
+        task.tags = tags
+    
+    db.add(task)
+    db.commit()
     db.refresh(task, ["tags", "category"])
     
     return task

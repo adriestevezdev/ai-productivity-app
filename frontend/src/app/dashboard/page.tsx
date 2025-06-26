@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Task, TaskCategory, TaskTag, TaskStatus, Goal, GoalType, GoalStatus } from '@/types/task';
+import { useApiClient } from '@/lib/api-client';
 import { useTasks } from '@/hooks/use-tasks';
 import { TaskForm } from '@/components/task-form';
+import { AITaskForm } from '@/components/ai-task-form';
 import { GoalForm } from '@/components/goal-form';
 import { useAuth } from '@clerk/nextjs';
 import { ChevronRightIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
+  const apiClient = useApiClient();
   const { user, isLoaded: userLoaded } = useUser();
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const {
@@ -27,6 +30,7 @@ export default function DashboardPage() {
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showAITaskForm, setShowAITaskForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -160,6 +164,15 @@ export default function DashboardPage() {
     setEditingGoal(null);
   };
 
+  const handleGoalDelete = async (goalId: number) => {
+    try {
+      await apiClient.delete(`/api/goals/${goalId}`);
+      setGoals(prev => prev.filter(goal => goal.id !== goalId));
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+    }
+  };
+
   const handleChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (chatInput.trim()) {
@@ -235,9 +248,24 @@ export default function DashboardPage() {
                   + New project
                 </button>
                 {goals.map(goal => (
-                  <div key={goal.id} className="px-3 py-1 flex items-center gap-2 text-sm text-[#A0A0A0] hover:text-white transition-all cursor-pointer">
-                    <span>{goal.icon}</span>
-                    <span className="truncate">{goal.title}</span>
+                  <div key={goal.id} className="group px-3 py-1 flex items-center justify-between gap-2 text-sm text-[#A0A0A0] hover:text-white transition-all cursor-pointer">
+                    <div className="flex items-center gap-2 truncate">
+                      <span>{goal.icon}</span>
+                      <span className="truncate">{goal.title}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Are you sure you want to delete this project and all its tasks?')) {
+                          handleGoalDelete(goal.id);
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -434,14 +462,21 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Create Task Button */}
-          <div className="mb-6">
+          {/* Create Task Buttons */}
+          <div className="mb-6 space-y-2">
             <button
               onClick={() => setShowTaskForm(true)}
               className="w-full flex items-center gap-2 px-4 py-3 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-all font-medium"
             >
               <PlusIcon className="w-5 h-5" />
               Create Task
+            </button>
+            <button
+              onClick={() => setShowAITaskForm(true)}
+              className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-white border border-[#4ECDC4]/20 rounded-lg hover:bg-[#2A2A2C] hover:border-[#4ECDC4]/40 transition-all font-medium"
+            >
+              <span>✨</span>
+              Create with AI
             </button>
           </div>
         </div>
@@ -586,6 +621,26 @@ export default function DashboardPage() {
                   setEditingTask(null);
                 }}
                 isEdit={!!editingTask}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Task form modal */}
+      {showAITaskForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
+          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <AITaskForm
+                categories={categories}
+                tags={tags}
+                goals={goals}
+                onTaskCreated={() => {
+                  setShowAITaskForm(false);
+                  loadData(); // Reload tasks after creation
+                }}
+                onCancel={() => setShowAITaskForm(false)}
               />
             </div>
           </div>

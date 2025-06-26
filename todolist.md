@@ -66,14 +66,14 @@
   - [X] Integración con API de goals existente
   - [X] Validación y feedback visual
   - [X] Selector de icono y color para el proyecto
-- [ ] **Crear tareas con IA (OpenAI):**
-  - [ ] Integración con OpenAI API
-  - [ ] Input de texto natural para descripción de tarea
-  - [ ] Procesamiento automático para extraer campos
-  - [ ] Vista previa antes de crear la tarea
-- [ ] **Generación automática de tareas:**
-  - [ ] POST /api/ai/parse-task - Procesar texto natural a tareas
-  - [ ] Extraer título, fecha, prioridad del lenguaje natural
+- [X] **Crear tareas con IA (OpenAI):**
+  - [X] Integración con OpenAI API
+  - [X] Input de texto natural para descripción de tarea
+  - [X] Procesamiento automático para extraer campos
+  - [X] Vista previa antes de crear la tarea
+- [X] **Generación automática de tareas:**
+  - [X] POST /api/ai/parse-task - Procesar texto natural a tareas
+  - [X] Extraer título, fecha, prioridad del lenguaje natural
   - [ ] Sugerir subtareas basadas en descripción
 - [ ] **Análisis de productividad:**
   - [ ] GET /api/ai/insights - Patrones y recomendaciones

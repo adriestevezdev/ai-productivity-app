@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Union
 from app.models.task import TaskStatus, TaskPriority
 
 
@@ -18,6 +18,20 @@ class TaskBase(BaseModel):
 
 class TaskCreate(TaskBase):
     tag_ids: Optional[List[int]] = []
+
+
+class TaskAICreate(BaseModel):
+    """Schema for AI-parsed task creation"""
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = None
+    priority: Union[TaskPriority, str] = TaskPriority.MEDIUM
+    due_date: Optional[Union[datetime, str]] = None
+    estimated_duration: Optional[int] = Field(None, ge=0, description="Duration in minutes")
+    tags: Optional[List[str]] = []
+    
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat() if v else None}
+    )
 
 
 class TaskUpdate(BaseModel):

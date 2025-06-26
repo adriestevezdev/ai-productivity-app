@@ -97,9 +97,6 @@ class GoalService:
         if not goal:
             return False
         
-        # Unlink associated tasks
-        db.query(Task).filter(Task.goal_id == goal_id).update({"goal_id": None})
-        
         db.delete(goal)
         db.commit()
         return True

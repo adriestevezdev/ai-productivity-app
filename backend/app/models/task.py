@@ -58,7 +58,7 @@ class Task(Base, TimestampMixin, UserOwnedMixin):
     parent_task = relationship("Task", remote_side=[id], backref="subtasks")
     
     # Goal relationship
-    goal_id = Column(Integer, ForeignKey('goals.id', ondelete='SET NULL'))
+    goal_id = Column(Integer, ForeignKey('goals.id', ondelete='CASCADE'))
     goal = relationship("Goal", back_populates="tasks")
     
     # AI-related fields

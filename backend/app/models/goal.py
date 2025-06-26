@@ -52,4 +52,4 @@ class Goal(Base, TimestampMixin, UserOwnedMixin):
     position = Column(Integer, default=0)
     
     # Relationship with tasks
-    tasks = relationship("Task", back_populates="goal")
+    tasks = relationship("Task", back_populates="goal", cascade="all, delete-orphan")
