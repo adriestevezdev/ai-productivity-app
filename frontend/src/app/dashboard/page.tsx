@@ -48,9 +48,11 @@ export default function DashboardPage() {
   const [hasProPlan, setHasProPlan] = useState<boolean | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [chatMode, setChatMode] = useState<'chat' | 'agent'>('chat');
+  const [agentProcessing, setAgentProcessing] = useState(false);
 
   // Use conversation hooks
-  const { conversations, createConversation } = useConversations();
+  const { conversations, createConversation, fetchConversations } = useConversations();
   const { 
     conversation, 
     sendMessage, 
@@ -205,6 +207,30 @@ export default function DashboardPage() {
     }
   };
 
+  const handleNewChat = () => {
+    setCurrentConversationId(null);
+    setChatInput('');
+  };
+
+  const handleDeleteConversation = async (conversationId: number) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta conversación?')) {
+      return;
+    }
+    
+    try {
+      await apiClient.delete(`/api/conversations/${conversationId}`);
+      // Reload conversations list
+      await fetchConversations();
+      
+      // If we're deleting the current conversation, clear it
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -218,12 +244,75 @@ export default function DashboardPage() {
           initial_message: chatInput
         });
         setCurrentConversationId(newConversation.id);
+        setChatInput('');
+        
+        // In agent mode, automatically analyze after first response
+        if (chatMode === 'agent') {
+          // Wait a bit for the conversation to be loaded and AI to respond
+          setTimeout(async () => {
+            try {
+              setAgentProcessing(true);
+              
+              // Use API client directly instead of hook functions
+              const analysis = await apiClient.post(`/api/conversations/${newConversation.id}/analyze`);
+              
+              if (analysis.confidence_score >= 0.5) {
+                // Auto-generate project if confidence is high enough
+                const result = await apiClient.post(`/api/conversations/${newConversation.id}/generate-project`, {
+                  analysis,
+                  create_goal: true
+                });
+                
+                if (result.goal_id) {
+                  // Refresh data to show new tasks
+                  await loadData();
+                  
+                  // Show success message (you might want to add a toast notification here)
+                  console.log('Project created successfully with', result.created_tasks.length, 'tasks');
+                }
+              }
+            } catch (error) {
+              console.error('Failed to analyze/generate in agent mode:', error);
+            } finally {
+              setAgentProcessing(false);
+            }
+          }, 3000); // Wait for AI response
+        }
       } else {
         // Send message to existing conversation
         await sendMessage(chatInput);
+        setChatInput('');
+        
+        // In agent mode, check if we should analyze after each message
+        if (chatMode === 'agent' && conversation && conversation.messages.length >= 2) {
+          setTimeout(async () => {
+            try {
+              setAgentProcessing(true);
+              
+              // Use API client directly
+              const analysis = await apiClient.post(`/api/conversations/${currentConversationId}/analyze`);
+              
+              if (analysis.confidence_score >= 0.7 && !conversation.generated_goal_id) {
+                // Auto-generate if we have high confidence and no project yet
+                const result = await apiClient.post(`/api/conversations/${currentConversationId}/generate-project`, {
+                  conversation_id: currentConversationId,
+                  analysis,
+                  create_goal: true
+                });
+                
+                if (result.goal_id) {
+                  await loadData();
+                  console.log('Project created successfully with', result.created_tasks.length, 'tasks');
+                }
+              }
+            } catch (error) {
+              console.error('Failed to analyze/generate in agent mode:', error);
+            } finally {
+              setAgentProcessing(false);
+            }
+          }, 3000);
+        }
       }
-      
-      setChatInput('');
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -341,27 +430,73 @@ export default function DashboardPage() {
         {/* Chats Section */}
         <div className="mt-auto border-t border-white/10">
           <div className="p-4">
-            <button 
-              onClick={() => setChatsExpanded(!chatsExpanded)}
-              className="w-full flex items-center gap-1 px-3 py-2 text-[#A0A0A0] hover:text-white transition-all"
-            >
-              {chatsExpanded ? (
-                <ChevronDownIcon className="w-4 h-4" />
-              ) : (
-                <ChevronRightIcon className="w-4 h-4" />
-              )}
-              Chats
-            </button>
+            <div className="w-full flex items-center gap-1 px-3 py-2 text-[#A0A0A0]">
+              <button 
+                onClick={() => setChatsExpanded(!chatsExpanded)}
+                className="flex items-center gap-1 hover:text-white transition-all"
+              >
+                {chatsExpanded ? (
+                  <ChevronDownIcon className="w-4 h-4" />
+                ) : (
+                  <ChevronRightIcon className="w-4 h-4" />
+                )}
+                Chats
+              </button>
+              <button
+                onClick={handleNewChat}
+                className="ml-auto p-1 text-[#606060] hover:text-white transition-all"
+                title="New Chat"
+              >
+                <PlusIcon className="w-4 h-4" />
+              </button>
+            </div>
             {chatsExpanded && (
               <div className="mt-2 space-y-1">
-                <div className="px-3 py-2 rounded-lg bg-[#242426] text-white text-sm cursor-pointer">
-                  <div className="font-medium">plan steps for a community...</div>
-                  <div className="text-xs text-[#606060]">Jun 21 • Active</div>
-                </div>
-                <div className="px-3 py-2 rounded-lg hover:bg-[#242426] text-[#A0A0A0] hover:text-white text-sm cursor-pointer transition-all">
-                  <div>Hello Productiv! I am new here...</div>
-                  <div className="text-xs text-[#606060]">May 24</div>
-                </div>
+                {conversations.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-[#606060]">
+                    Start a conversation to see it here
+                  </div>
+                ) : (
+                  conversations.map(conv => (
+                    <div 
+                      key={conv.id}
+                      className={`group px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
+                        currentConversationId === conv.id 
+                          ? 'bg-[#242426] text-white' 
+                          : 'hover:bg-[#242426] text-[#A0A0A0] hover:text-white'
+                      }`}
+                      onClick={() => setCurrentConversationId(conv.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium truncate">{conv.title}</div>
+                            {conv.generated_goal_id && (
+                              <span className="text-xs px-1.5 py-0.5 bg-[#4ECDC4]/20 text-[#4ECDC4] rounded" title="Project created">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-[#606060]">
+                            {new Date(conv.updated_at || conv.created_at).toLocaleDateString()} • {conv.status}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteConversation(conv.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-[#606060] hover:text-red-400 transition-all"
+                          title="Delete conversation"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -402,7 +537,9 @@ export default function DashboardPage() {
                 </svg>
               </div>
               
-              <h2 className="text-3xl font-bold text-white mb-6">What can I help with?</h2>
+              <h2 className="text-3xl font-bold text-white mb-6">
+                {currentConversationId ? 'Continue your conversation' : 'What can I help with?'}
+              </h2>
               
               <div className="space-y-3">
                 <button 
@@ -445,6 +582,18 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+              {agentProcessing && chatMode === 'agent' && (
+                <div className="text-left">
+                  <div className="inline-block px-4 py-2 rounded-lg bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                    <span className="animate-pulse flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      Agent is creating tasks...
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -457,9 +606,17 @@ export default function DashboardPage() {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Message Productiv..."
+                placeholder={
+                  chatMode === 'agent' 
+                    ? "Describe your project and I'll create tasks..." 
+                    : currentConversationId 
+                      ? "Continue the conversation..." 
+                      : "Start a new conversation..."
+                }
                 disabled={sendingMessage}
-                className="w-full px-4 py-3 bg-[#242426] text-white rounded-lg pr-12 placeholder-[#606060] focus:outline-none focus:ring-2 focus:ring-[#4ECDC4] disabled:opacity-50"
+                className={`w-full px-4 py-3 bg-[#242426] text-white rounded-lg pr-12 placeholder-[#606060] focus:outline-none focus:ring-2 disabled:opacity-50 ${
+                  chatMode === 'agent' ? 'focus:ring-[#8B5CF6]' : 'focus:ring-[#4ECDC4]'
+                }`}
               />
               <button
                 type="submit"
@@ -476,11 +633,18 @@ export default function DashboardPage() {
                 <span className="flex items-center gap-1">
                   <span className="text-[#8B5CF6]">●</span> GPT 4.1
                 </span>
-                <button className="flex items-center gap-1 hover:text-[#A0A0A0]">
+                <button 
+                  onClick={() => setChatMode(chatMode === 'chat' ? 'agent' : 'chat')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${
+                    chatMode === 'agent' 
+                      ? 'bg-[#4ECDC4]/20 text-[#4ECDC4]' 
+                      : 'hover:text-[#A0A0A0]'
+                  }`}
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                  Agent
+                  {chatMode === 'agent' ? 'Agent Mode' : 'Agent'}
                 </button>
               </div>
               
@@ -786,7 +950,7 @@ export default function DashboardPage() {
           onClose={() => setShowAnalysis(false)}
           onProjectCreated={(goalId) => {
             loadData(); // Reload to show new goal/tasks
-            setCurrentConversationId(null); // Clear current conversation
+            // Keep current conversation active for further discussion
           }}
         />
       )}

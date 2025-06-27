@@ -312,8 +312,48 @@ async def generate_project_from_conversation(
     # Get analysis (either provided or generate new one)
     analysis = request.analysis
     if not analysis:
-        # Generate analysis first
-        analysis = await analyze_conversation(conversation_id, db, current_user, validation_result)
+        # Load conversation with messages for analysis
+        conversation_with_messages = db.query(Conversation).options(
+            joinedload(Conversation.messages)
+        ).filter(
+            and_(
+                Conversation.id == conversation_id,
+                Conversation.user_id == current_user
+            )
+        ).first()
+        
+        if not conversation_with_messages:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        if len(conversation_with_messages.messages) < 2:
+            raise HTTPException(
+                status_code=400, 
+                detail="Conversation needs more messages to analyze for project extraction"
+            )
+        
+        # Prepare messages for AI analysis
+        messages_for_analysis = []
+        for msg in sorted(conversation_with_messages.messages, key=lambda m: m.created_at):
+            messages_for_analysis.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+        
+        # Get AI service and analyze
+        ai_service = get_ai_service()
+        if not ai_service:
+            raise HTTPException(
+                status_code=503,
+                detail="AI service not configured. Please set OPENAI_API_KEY."
+            )
+        
+        try:
+            analysis = ai_service.analyze_conversation_for_project(messages_for_analysis)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error analyzing conversation: {str(e)}"
+            )
     
     created_goal_id = None
     created_tasks = []
@@ -324,10 +364,9 @@ async def generate_project_from_conversation(
             goal = Goal(
                 title=analysis.suggested_title,
                 description=analysis.suggested_description,
-                type=GoalType.PROJECT,
-                status=GoalStatus.ACTIVE,
+                goal_type=GoalType.project,
+                status=GoalStatus.active,
                 user_id=current_user,
-                estimated_hours=sum(task.get("estimated_duration", 60) for task in analysis.suggested_tasks) / 60.0,
                 # Store analysis metadata
                 ai_milestones=[{"title": milestone, "description": ""} for milestone in analysis.key_milestones],
                 ai_estimated_hours=sum(task.get("estimated_duration", 60) for task in analysis.suggested_tasks) / 60.0,
@@ -346,7 +385,7 @@ async def generate_project_from_conversation(
                     description=task_data.get("description", ""),
                     priority=TaskPriority(task_data.get("priority", "medium")),
                     status=TaskStatus.TODO,
-                    estimated_hours=task_data.get("estimated_duration", 60) / 60.0,
+                    estimated_hours=int(task_data.get("estimated_duration", 60) / 60),
                     goal_id=goal.id,
                     user_id=current_user,
                     position=len(created_tasks),
@@ -363,7 +402,7 @@ async def generate_project_from_conversation(
             
             # Link conversation to generated goal
             conversation.generated_goal_id = goal.id
-            conversation.status = ConversationStatus.COMPLETED
+            # Keep conversation ACTIVE to allow further discussion about the project
             
             db.commit()
             

@@ -64,7 +64,6 @@ export interface ProjectAnalysis {
 }
 
 export interface ProjectGenerationRequest {
-  conversation_id: number;
   analysis?: ProjectAnalysis;
   create_goal: boolean;
 }

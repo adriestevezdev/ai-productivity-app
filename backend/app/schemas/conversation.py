@@ -77,7 +77,6 @@ class ProjectAnalysis(BaseModel):
 
 
 class ProjectGenerationRequest(BaseModel):
-    conversation_id: int
     analysis: Optional[ProjectAnalysis] = None
     create_goal: bool = True
 

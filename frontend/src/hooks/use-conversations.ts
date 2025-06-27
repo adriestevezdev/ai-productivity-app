@@ -144,12 +144,12 @@ export function useConversation(conversationId: number | null) {
         request
       );
       
-      // Update conversation status if project was created
+      // Update conversation metadata if project was created
       if (result.goal_id && conversation) {
         setConversation(prev => prev ? {
           ...prev,
-          generated_goal_id: result.goal_id,
-          status: 'completed' as any
+          generated_goal_id: result.goal_id
+          // Keep conversation ACTIVE to allow further discussion
         } : null);
       }
       
