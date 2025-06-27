@@ -13,6 +13,9 @@ import { ChevronRightIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24
 import { UserPlanStatusClient } from '@/components/user-plan-status-client';
 import { ProFeatureGateClient } from '@/components/pro-feature-gate-client';
 import { UpgradePrompt } from '@/components/upgrade-prompt';
+import { useConversations, useConversation } from '@/hooks/use-conversations';
+import { ConversationStatus } from '@/types/conversation';
+import { ConversationAnalysis } from '@/components/conversation-analysis';
 
 export default function DashboardPage() {
   const apiClient = useApiClient();
@@ -41,9 +44,21 @@ export default function DashboardPage() {
   const [teamExpanded, setTeamExpanded] = useState(true);
   const [chatsExpanded, setChatsExpanded] = useState(true);
   const [chatInput, setChatInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{type: 'user' | 'assistant', content: string}>>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [hasProPlan, setHasProPlan] = useState<boolean | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
+  // Use conversation hooks
+  const { conversations, createConversation } = useConversations();
+  const { 
+    conversation, 
+    sendMessage, 
+    sendingMessage,
+    analyzeConversation,
+    generateProject,
+    error: conversationError 
+  } = useConversation(currentConversationId);
 
   const loadData = useCallback(async () => {
     try {
@@ -190,18 +205,27 @@ export default function DashboardPage() {
     }
   };
 
-  const handleChatSubmit = (e: React.FormEvent) => {
+  const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (chatInput.trim()) {
-      setChatMessages([...chatMessages, { type: 'user', content: chatInput }]);
-      // Here you would integrate with AI to get response
-      setTimeout(() => {
-        setChatMessages(prev => [...prev, { 
-          type: 'assistant', 
-          content: 'I understand you want to: ' + chatInput + '. I can help you create tasks for this.'
-        }]);
-      }, 1000);
+    if (!chatInput.trim()) return;
+    
+    try {
+      // If no current conversation, create one
+      if (!currentConversationId) {
+        const newConversation = await createConversation({
+          title: chatInput.slice(0, 50) + (chatInput.length > 50 ? '...' : ''),
+          status: ConversationStatus.ACTIVE,
+          initial_message: chatInput
+        });
+        setCurrentConversationId(newConversation.id);
+      } else {
+        // Send message to existing conversation
+        await sendMessage(chatInput);
+      }
+      
       setChatInput('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
@@ -370,7 +394,7 @@ export default function DashboardPage() {
       {/* Center Chat Area */}
       <main className="flex-1 flex flex-col">
         <div className="flex-1 flex items-center justify-center p-8">
-          {chatMessages.length === 0 ? (
+          {!conversation || conversation.messages.length === 0 ? (
             <div className="text-center max-w-2xl">
               <div className="w-24 h-24 bg-[#242426] rounded-2xl flex items-center justify-center mx-auto mb-8">
                 <svg className="w-12 h-12 text-[#4ECDC4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,10 +427,10 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="w-full max-w-3xl space-y-4">
-              {chatMessages.map((msg, idx) => (
-                <div key={idx} className={`${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
+              {conversation.messages.map((msg, idx) => (
+                <div key={msg.id} className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                   <div className={`inline-block px-4 py-2 rounded-lg ${
-                    msg.type === 'user' 
+                    msg.role === 'user' 
                       ? 'bg-[#4ECDC4] text-black' 
                       : 'bg-[#242426] text-white'
                   }`}>
@@ -414,6 +438,13 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
+              {sendingMessage && (
+                <div className="text-left">
+                  <div className="inline-block px-4 py-2 rounded-lg bg-[#242426] text-white">
+                    <span className="animate-pulse">Thinking...</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -427,27 +458,44 @@ export default function DashboardPage() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Message Productiv..."
-                className="w-full px-4 py-3 bg-[#242426] text-white rounded-lg pr-12 placeholder-[#606060] focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]"
+                disabled={sendingMessage}
+                className="w-full px-4 py-3 bg-[#242426] text-white rounded-lg pr-12 placeholder-[#606060] focus:outline-none focus:ring-2 focus:ring-[#4ECDC4] disabled:opacity-50"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#606060] hover:text-white transition-all"
+                disabled={sendingMessage || !chatInput.trim()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#606060] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
             </div>
-            <div className="flex items-center gap-4 mt-2 text-xs text-[#606060]">
-              <span className="flex items-center gap-1">
-                <span className="text-[#8B5CF6]">●</span> GPT 4.1
-              </span>
-              <button className="flex items-center gap-1 hover:text-[#A0A0A0]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                Agent
-              </button>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-4 text-xs text-[#606060]">
+                <span className="flex items-center gap-1">
+                  <span className="text-[#8B5CF6]">●</span> GPT 4.1
+                </span>
+                <button className="flex items-center gap-1 hover:text-[#A0A0A0]">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Agent
+                </button>
+              </div>
+              
+              {/* Generate Project Button */}
+              {conversation && conversation.messages.length >= 4 && (
+                <button
+                  onClick={() => setShowAnalysis(true)}
+                  className="flex items-center gap-1 px-3 py-1 bg-[#4ECDC4]/10 text-[#4ECDC4] rounded-md hover:bg-[#4ECDC4]/20 transition-colors text-xs"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Generate Project
+                </button>
+              )}
             </div>
           </div>
         </form>
@@ -723,6 +771,24 @@ export default function DashboardPage() {
             onClose={() => setShowUpgradePrompt(false)}
           />
         </div>
+      )}
+
+      {/* Conversation Analysis Modal */}
+      {showAnalysis && currentConversationId && (
+        <ConversationAnalysis
+          conversationId={currentConversationId}
+          onAnalyze={analyzeConversation}
+          onGenerateProject={(analysis) => generateProject({ 
+            conversation_id: currentConversationId, 
+            analysis, 
+            create_goal: true 
+          })}
+          onClose={() => setShowAnalysis(false)}
+          onProjectCreated={(goalId) => {
+            loadData(); // Reload to show new goal/tasks
+            setCurrentConversationId(null); // Clear current conversation
+          }}
+        />
       )}
     </div>
   );

@@ -43,6 +43,10 @@ app.include_router(ai_router)
 from app.api.subscriptions import router as subscriptions_router
 app.include_router(subscriptions_router)
 
+# Import and include conversations router
+from app.api.conversations import router as conversations_router
+app.include_router(conversations_router)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to AI Productivity App API"}

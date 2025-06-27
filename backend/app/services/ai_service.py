@@ -1,10 +1,11 @@
 import openai
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 import json
 import re
 from app.core.config import settings
 from app.schemas.task import TaskAICreate
+from app.schemas.conversation import ProjectAnalysis
 from pydantic import ValidationError
 
 class AIService:
@@ -334,6 +335,164 @@ SMART Components:
                 ],
                 "recommended_tasks": []
             }
+    
+    def chat_with_context(self, messages: List[Dict[str, str]], system_context: Optional[str] = None) -> str:
+        """
+        Have a conversation with the AI assistant with full context
+        """
+        system_prompt = system_context or """You are a helpful AI assistant for a productivity app. 
+        You help users plan projects, break down goals, and organize their work.
+        
+        Your role is to:
+        - Help users clarify their project ideas
+        - Ask relevant questions to understand scope and requirements
+        - Suggest practical approaches and methodologies
+        - Eventually help analyze conversations to extract structured project information
+        
+        Be conversational, helpful, and focus on productivity and project management."""
+        
+        try:
+            conversation_messages = [{"role": "system", "content": system_prompt}]
+            conversation_messages.extend(messages)
+            
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=conversation_messages,
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"Error in chat conversation: {str(e)}")
+            return "I'm sorry, I'm having trouble responding right now. Please try again later."
+    
+    def analyze_conversation_for_project(self, messages: List[Dict[str, str]]) -> ProjectAnalysis:
+        """
+        Analyze a conversation to extract project information and generate structured data
+        """
+        system_prompt = """You are a project analysis expert. Analyze the following conversation between a user and an AI assistant
+        to extract project information and create a structured project proposal.
+        
+        Extract and organize:
+        1. A clear project title
+        2. A comprehensive description
+        3. Estimated timeline
+        4. Key milestones (3-5 major checkpoints)
+        5. Suggested initial tasks (5-8 actionable items)
+        6. Your confidence in this analysis (0.0 to 1.0)
+        
+        Return ONLY valid JSON in this exact format:
+        {
+            "suggested_title": "Clear project title",
+            "suggested_description": "Comprehensive project description based on conversation",
+            "estimated_timeline": "Human readable timeline like '2-3 months' or '4-6 weeks'",
+            "key_milestones": ["Milestone 1", "Milestone 2", "Milestone 3"],
+            "suggested_tasks": [
+                {
+                    "title": "Task title",
+                    "description": "Task description",
+                    "priority": "high|medium|low",
+                    "estimated_duration": 60
+                }
+            ],
+            "confidence_score": 0.85
+        }
+        
+        If the conversation doesn't contain enough information for a project, set confidence_score to 0.3 or lower."""
+        
+        try:
+            # Prepare conversation context
+            conversation_text = "\n".join([
+                f"{msg['role'].upper()}: {msg['content']}" for msg in messages
+            ])
+            
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Analyze this conversation for project extraction:\n\n{conversation_text}"}
+                ],
+                temperature=0.3,
+                max_tokens=1000
+            )
+            
+            result = response.choices[0].message.content.strip()
+            
+            # Clean up response
+            if result.startswith("```json"):
+                result = result[7:]
+            if result.endswith("```"):
+                result = result[:-3]
+            
+            parsed_result = json.loads(result)
+            
+            # Validate required fields
+            required_fields = ["suggested_title", "suggested_description", "estimated_timeline", 
+                             "key_milestones", "suggested_tasks", "confidence_score"]
+            
+            for field in required_fields:
+                if field not in parsed_result:
+                    raise ValueError(f"Missing required field: {field}")
+            
+            # Validate confidence score
+            confidence = parsed_result.get("confidence_score", 0.0)
+            if not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1:
+                parsed_result["confidence_score"] = 0.5
+            
+            return ProjectAnalysis(**parsed_result)
+            
+        except Exception as e:
+            print(f"Error analyzing conversation: {str(e)}")
+            # Return a low-confidence fallback analysis
+            return ProjectAnalysis(
+                suggested_title="New Project",
+                suggested_description="Based on our conversation, this appears to be a project that needs further clarification.",
+                estimated_timeline="To be determined",
+                key_milestones=["Initial planning", "Implementation", "Review and completion"],
+                suggested_tasks=[
+                    {
+                        "title": "Define project scope",
+                        "description": "Clarify the exact requirements and goals",
+                        "priority": "high",
+                        "estimated_duration": 60
+                    }
+                ],
+                confidence_score=0.2
+            )
+    
+    def generate_project_suggestions(self, user_input: str) -> str:
+        """
+        Generate suggestions for project ideas based on user input
+        """
+        system_prompt = """You are a project ideation assistant. Help users brainstorm and refine project ideas.
+        
+        Given user input about their interests, goals, or challenges, suggest 2-3 specific, actionable project ideas.
+        For each suggestion, include:
+        - A clear project title
+        - Brief description (2-3 sentences)
+        - Estimated scope/timeline
+        - Key benefits
+        
+        Be encouraging and practical. Focus on projects that can realistically be completed."""
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.8,
+                max_tokens=400
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"Error generating project suggestions: {str(e)}")
+            return "I'm having trouble generating suggestions right now. Could you tell me more about what kind of project you're interested in?"
 
 # Lazy singleton instance
 _ai_service: Optional[AIService] = None
