@@ -6,12 +6,10 @@ import { Task, TaskCategory, TaskTag, TaskStatus, Goal, GoalType, GoalStatus } f
 import { useApiClient } from '@/lib/api-client';
 import { useTasks } from '@/hooks/use-tasks';
 import { TaskForm } from '@/components/task-form';
-import { AITaskForm } from '@/components/ai-task-form';
 import { GoalForm } from '@/components/goal-form';
 import { useAuth } from '@clerk/nextjs';
 import { ChevronRightIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { UserPlanStatusClient } from '@/components/user-plan-status-client';
-import { ProFeatureGateClient } from '@/components/pro-feature-gate-client';
 import { UpgradePrompt } from '@/components/upgrade-prompt';
 import { useConversations, useConversation } from '@/hooks/use-conversations';
 import { ConversationStatus } from '@/types/conversation';
@@ -36,7 +34,6 @@ export default function DashboardPage() {
   const [tags, setTags] = useState<TaskTag[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [showAITaskForm, setShowAITaskForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -51,6 +48,7 @@ export default function DashboardPage() {
   const [chatMode, setChatMode] = useState<'chat' | 'agent'>('chat');
   const [agentProcessing, setAgentProcessing] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Use conversation hooks
@@ -177,8 +175,6 @@ export default function DashboardPage() {
           setEditingTask(null);
         } else if (showTaskForm) {
           setShowTaskForm(false);
-        } else if (showAITaskForm) {
-          setShowAITaskForm(false);
         } else if (showGoalForm || editingGoal) {
           setShowGoalForm(false);
           setEditingGoal(null);
@@ -192,7 +188,7 @@ export default function DashboardPage() {
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [editingTask, showTaskForm, showAITaskForm, showGoalForm, editingGoal, showAnalysis, showUpgradePrompt]);
+  }, [editingTask, showTaskForm, showGoalForm, editingGoal, showAnalysis, showUpgradePrompt]);
 
   const handleTaskCreate = async () => {
     setShowTaskForm(false);
@@ -354,10 +350,14 @@ export default function DashboardPage() {
     }
   };
 
-  // Filter tasks based on selected project
+  // Filter tasks based on selected project and completion status
   const filteredTasks = selectedProjectId 
-    ? tasks.filter(task => task.goal_id === selectedProjectId)
-    : tasks;
+    ? tasks.filter(task => {
+        const matchesProject = task.goal_id === selectedProjectId;
+        const isCompleted = task.status === TaskStatus.COMPLETED;
+        return matchesProject && (showCompletedTasks || !isCompleted);
+      })
+    : tasks.filter(task => showCompletedTasks || task.status !== TaskStatus.COMPLETED);
 
   // Get selected project info
   const selectedProject = selectedProjectId 
@@ -793,70 +793,36 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-white">productiv.ai</h2>
             <div className="flex items-center gap-2">
-              <button className="p-1 text-[#606060] hover:text-white transition-all">
+              <button 
+                onClick={() => setShowTaskForm(true)}
+                className="p-1 text-[#606060] hover:text-[#4ECDC4] transition-all"
+                title="Crear nueva tarea"
+              >
                 <PlusIcon className="w-5 h-5" />
               </button>
-              <button className="p-1 text-[#606060] hover:text-white transition-all">
+              <button 
+                onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+                className={`p-1 transition-all ${
+                  showCompletedTasks 
+                    ? 'text-[#4ECDC4]' 
+                    : 'text-[#606060] hover:text-white'
+                }`}
+                title={showCompletedTasks ? 'Ocultar tareas completadas' : 'Mostrar tareas completadas'}
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
               <button className="p-1 text-[#606060] hover:text-white transition-all">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </button>
               <span className="text-xs text-[#606060] bg-[#242426] px-2 py-1 rounded">{filteredTasks.length}</span>
             </div>
           </div>
 
-          <div className="mb-4">
-            <div className="relative">
-              <select
-                value={selectedProjectId || ''}
-                onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
-                className="w-full bg-[#242426] text-[#A0A0A0] text-sm px-3 py-2 rounded-lg border border-[#606060]/20 focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]/50 focus:border-[#4ECDC4]/50 appearance-none cursor-pointer"
-              >
-                <option value="">Todos los Proyectos</option>
-                {goals.map(goal => (
-                  <option key={goal.id} value={goal.id}>
-                    {goal.icon && `${goal.icon} `}{goal.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-[#606060] pointer-events-none" />
-            </div>
-          </div>
 
-          {/* Create Task Buttons */}
-          <div className="mb-6 space-y-2">
-            <button
-              onClick={() => setShowTaskForm(true)}
-              className="w-full flex items-center gap-2 px-4 py-3 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-all font-medium"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Crear Tarea
-            </button>
-            <ProFeatureGateClient
-              fallback={
-                <button
-                  onClick={() => setShowUpgradePrompt(true)}
-                  className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-[#606060] border border-[#606060]/20 rounded-lg hover:bg-[#2A2A2C] transition-all font-medium"
-                >
-                  <span>✨</span>
-                  Crear con IA (Pro)
-                </button>
-              }
-            >
-              <button
-                onClick={() => setShowAITaskForm(true)}
-                className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-white border border-[#4ECDC4]/20 rounded-lg hover:bg-[#2A2A2C] hover:border-[#4ECDC4]/40 transition-all font-medium"
-              >
-                <span>✨</span>
-                Crear con IA
-              </button>
-            </ProFeatureGateClient>
-          </div>
         </div>
 
         {/* Scrollable Tasks List */}
@@ -970,7 +936,10 @@ export default function DashboardPage() {
           {/* Completed tasks toggle */}
           {filteredTasks.some(t => t.status === TaskStatus.COMPLETED) && (
             <div className="pt-4 border-t border-white/10">
-              <button className="text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
+              <button className="text-sm font-medium bg-[#4ECDC4]/10 text-[#4ECDC4] hover:bg-[#4ECDC4]/20 hover:text-[#45B7B8] px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 tareas completadas
               </button>
             </div>
@@ -1013,32 +982,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* AI Task form modal */}
-      {showAITaskForm && (
-        <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
-          onClick={() => setShowAITaskForm(false)}
-        >
-          <div 
-            className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <AITaskForm
-                categories={categories}
-                tags={tags}
-                goals={goals}
-                selectedGoalId={selectedProjectId}
-                onTaskCreated={() => {
-                  setShowAITaskForm(false);
-                  loadData(); // Reload tasks after creation
-                }}
-                onCancel={() => setShowAITaskForm(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Goal form modal */}
       {(showGoalForm || editingGoal) && (
