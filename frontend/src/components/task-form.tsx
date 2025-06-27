@@ -11,6 +11,7 @@ interface TaskFormProps {
   categories: TaskCategory[];
   tags: TaskTag[];
   goals: Goal[];
+  selectedGoalId?: number | null;
   onSubmit?: (data: TaskCreate | TaskUpdate) => void;
   onCancel?: () => void;
   isEdit?: boolean;
@@ -21,6 +22,7 @@ export function TaskForm({
   categories, 
   tags,
   goals,
+  selectedGoalId,
   onSubmit, 
   onCancel,
   isEdit = false 
@@ -38,7 +40,7 @@ export function TaskForm({
     due_date: initialData.due_date ?? '',
     estimated_hours: initialData.estimated_hours ?? undefined,
     category_id: initialData.category_id ?? undefined,
-    goal_id: initialData.goal_id ?? undefined,
+    goal_id: initialData.goal_id ?? selectedGoalId ?? undefined,
     parent_task_id: initialData.parent_task_id ?? undefined,
     tag_ids: initialData.tag_ids ?? [],
   });
@@ -48,21 +50,21 @@ export function TaskForm({
     const newErrors: Record<string, string> = {};
     
     if (!formData.title.trim()) {
-      newErrors.title = 'Task title is required';
+      newErrors.title = 'El título de la tarea es obligatorio';
     } else if (formData.title.length > 200) {
-      newErrors.title = 'Task title must be less than 200 characters';
+      newErrors.title = 'El título de la tarea debe tener menos de 200 caracteres';
     }
     
     if (formData.description && formData.description.length > 2000) {
-      newErrors.description = 'Description must be less than 2000 characters';
+      newErrors.description = 'La descripción debe tener menos de 2000 caracteres';
     }
     
     if (formData.due_date && new Date(formData.due_date) < new Date()) {
-      newErrors.due_date = 'Due date cannot be in the past';
+      newErrors.due_date = 'La fecha de vencimiento no puede ser en el pasado';
     }
     
     if (formData.estimated_hours && (formData.estimated_hours < 0 || formData.estimated_hours > 1000)) {
-      newErrors.estimated_hours = 'Estimated hours must be between 0 and 1000';
+      newErrors.estimated_hours = 'Las horas estimadas deben estar entre 0 y 1000';
     }
     
     setErrors(newErrors);
@@ -141,7 +143,7 @@ export function TaskForm({
       {/* Title */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-white mb-2">
-          Title *
+          Título *
         </label>
         <input
           type="text"
@@ -154,7 +156,7 @@ export function TaskForm({
               ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
               : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
           }`}
-          placeholder="Enter task title"
+          placeholder="Ingresa el título de la tarea"
           required
         />
         {errors.title && <p className="mt-1 text-sm text-red-400">{errors.title}</p>}
@@ -164,14 +166,14 @@ export function TaskForm({
       <div>
         <div className="flex items-center justify-between mb-2">
           <label htmlFor="description" className="block text-sm font-medium text-white">
-            Description
+            Descripción
           </label>
           <button
             type="button"
             onClick={() => setShowPreview(!showPreview)}
             className="text-sm text-[#4ECDC4] hover:text-[#45B7B8] transition-colors"
           >
-            {showPreview ? 'Edit' : 'Preview'}
+            {showPreview ? 'Editar' : 'Vista Previa'}
           </button>
         </div>
         
@@ -193,12 +195,12 @@ export function TaskForm({
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
             }`}
-            placeholder="Enter task description (Markdown supported)"
+            placeholder="Ingresa la descripción de la tarea (Markdown soportado)"
           />
         )}
         {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
         <p className="mt-1 text-xs text-[#A0A0A0]">
-          Supports Markdown formatting: **bold**, *italic*, `code`, etc.
+          Soporta formato Markdown: **negrita**, *cursiva*, `código`, etc.
         </p>
       </div>
 
@@ -206,7 +208,7 @@ export function TaskForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-white mb-2">
-            Status
+            Estado
           </label>
           <select
             id="status"
@@ -215,16 +217,16 @@ export function TaskForm({
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           >
-            <option value={TaskStatus.TODO}>To Do</option>
-            <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
-            <option value={TaskStatus.COMPLETED}>Completed</option>
-            <option value={TaskStatus.ARCHIVED}>Archived</option>
+            <option value={TaskStatus.TODO}>Por Hacer</option>
+            <option value={TaskStatus.IN_PROGRESS}>En Progreso</option>
+            <option value={TaskStatus.COMPLETED}>Completada</option>
+            <option value={TaskStatus.ARCHIVED}>Archivada</option>
           </select>
         </div>
 
         <div>
           <label htmlFor="priority" className="block text-sm font-medium text-white mb-2">
-            Priority
+            Prioridad
           </label>
           <select
             id="priority"
@@ -233,10 +235,10 @@ export function TaskForm({
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           >
-            <option value={TaskPriority.LOW}>Low</option>
-            <option value={TaskPriority.MEDIUM}>Medium</option>
-            <option value={TaskPriority.HIGH}>High</option>
-            <option value={TaskPriority.URGENT}>Urgent</option>
+            <option value={TaskPriority.LOW}>Baja</option>
+            <option value={TaskPriority.MEDIUM}>Media</option>
+            <option value={TaskPriority.HIGH}>Alta</option>
+            <option value={TaskPriority.URGENT}>Urgente</option>
           </select>
         </div>
       </div>
@@ -245,7 +247,7 @@ export function TaskForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="due_date" className="block text-sm font-medium text-white mb-2">
-            Due Date
+            Fecha de Vencimiento
           </label>
           <input
             type="datetime-local"
@@ -264,7 +266,7 @@ export function TaskForm({
 
         <div>
           <label htmlFor="estimated_hours" className="block text-sm font-medium text-white mb-2">
-            Estimated Hours
+            Horas Estimadas
           </label>
           <input
             type="number"
@@ -290,7 +292,7 @@ export function TaskForm({
         {/* Category */}
         <div>
           <label htmlFor="category_id" className="block text-sm font-medium text-white mb-2">
-            Category
+            Categoría
           </label>
           <select
             id="category_id"
@@ -299,7 +301,7 @@ export function TaskForm({
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           >
-            <option value="">No category</option>
+            <option value="">Sin categoría</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.icon && `${category.icon} `}{category.name}
@@ -311,7 +313,7 @@ export function TaskForm({
         {/* Project/Goal */}
         <div>
           <label htmlFor="goal_id" className="block text-sm font-medium text-white mb-2">
-            Project
+            Proyecto
           </label>
           <select
             id="goal_id"
@@ -320,7 +322,7 @@ export function TaskForm({
             onChange={handleChange}
             className="w-full bg-[#242426] text-white px-4 py-2 rounded-lg border border-white/8 focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20"
           >
-            <option value="">No project</option>
+            <option value="">Sin proyecto</option>
             {goals.map(goal => (
               <option key={goal.id} value={goal.id}>
                 {goal.icon && `${goal.icon} `}{goal.title}
@@ -328,7 +330,7 @@ export function TaskForm({
             ))}
           </select>
           <p className="mt-1 text-xs text-[#A0A0A0]">
-            Assign this task to a specific project or goal
+            Asigna esta tarea a un proyecto o meta específica
           </p>
         </div>
       </div>
@@ -337,7 +339,7 @@ export function TaskForm({
       {tags.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-white mb-2">
-            Tags
+            Etiquetas
           </label>
           <div className="flex flex-wrap gap-2">
             {tags.map(tag => (
@@ -384,14 +386,14 @@ export function TaskForm({
           className="px-6 py-2 text-[#A0A0A0] hover:text-white transition-colors"
           disabled={isLoading}
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
           className="px-6 py-2 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           disabled={isLoading}
         >
-          {isLoading ? 'Saving...' : (isEdit ? 'Update Task' : 'Create Task')}
+          {isLoading ? 'Guardando...' : (isEdit ? 'Actualizar Tarea' : 'Crear Tarea')}
         </button>
       </div>
     </form>

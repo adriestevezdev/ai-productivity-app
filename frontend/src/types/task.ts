@@ -126,6 +126,7 @@ export interface TaskAICreate {
   due_date?: string;
   estimated_duration?: number;
   tags?: string[];
+  goal_id?: number;
 }
 
 export interface TaskStatusUpdate {

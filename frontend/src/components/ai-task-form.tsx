@@ -11,6 +11,7 @@ interface AITaskFormProps {
   categories: TaskCategory[];
   tags: TaskTag[];
   goals: Goal[];
+  selectedGoalId?: number | null;
   onTaskCreated?: () => void;
   onCancel?: () => void;
 }
@@ -19,6 +20,7 @@ export function AITaskForm({
   categories, 
   tags, 
   goals,
+  selectedGoalId,
   onTaskCreated,
   onCancel 
 }: AITaskFormProps) {
@@ -79,7 +81,12 @@ export function AITaskForm({
     setError(null);
     
     try {
-      await apiClient.post('/api/tasks/create-from-ai', parsedTask);
+      // Add goal_id to the task if a project is selected
+      const taskWithGoal = selectedGoalId 
+        ? { ...parsedTask, goal_id: selectedGoalId }
+        : parsedTask;
+      
+      await apiClient.post('/api/tasks/create-from-ai', taskWithGoal);
       onTaskCreated?.();
     } catch (err) {
       console.error('Failed to create task:', err);
@@ -91,7 +98,7 @@ export function AITaskForm({
   };
 
   const formatDate = (dateStr: string | undefined) => {
-    if (!dateStr) return 'Not set';
+    if (!dateStr) return 'No establecida';
     try {
       return new Date(dateStr).toLocaleDateString();
     } catch {
@@ -119,10 +126,10 @@ export function AITaskForm({
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">
-            Create Task with AI
+            Crear Tarea con IA
           </h3>
           <p className="text-[#A0A0A0] text-sm">
-            Describe your task in natural language and let AI help you organize it
+            Describe tu tarea en lenguaje natural y deja que la IA te ayude a organizarla
           </p>
           {/* Usage indicator */}
           {!subscriptionLoading && (
@@ -134,7 +141,7 @@ export function AITaskForm({
         
         <div>
           <label htmlFor="ai-input" className="block text-sm font-medium text-white mb-2">
-            Describe your task
+            Describe tu tarea
           </label>
           <textarea
             id="ai-input"
@@ -149,11 +156,11 @@ export function AITaskForm({
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
             }`}
-            placeholder="Example: I need to finish the quarterly report by Friday, it's urgent and will take about 2 hours"
+            placeholder="Ejemplo: Necesito terminar el reporte trimestral para el viernes, es urgente y tomará unas 2 horas"
             autoFocus
           />
           <p className="mt-2 text-xs text-[#A0A0A0]">
-            Include details like due dates, priority, time estimates, and categories/tags
+            Incluye detalles como fechas de vencimiento, prioridad, estimaciones de tiempo y categorías/etiquetas
           </p>
         </div>
         
@@ -170,7 +177,7 @@ export function AITaskForm({
             className="px-6 py-2 text-[#A0A0A0] hover:text-white transition-colors"
             disabled={isLoading}
           >
-            Cancel
+            Cancelar
           </button>
           <button
             onClick={handleParse}
@@ -180,12 +187,12 @@ export function AITaskForm({
             {isLoading ? (
               <>
                 <span className="animate-spin">⏳</span>
-                Processing...
+                Procesando...
               </>
             ) : (
               <>
                 <span>✨</span>
-                Parse with AI
+                Procesar con IA
               </>
             )}
           </button>
@@ -199,10 +206,10 @@ export function AITaskForm({
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">
-            AI Task Preview
+            Vista Previa de Tarea IA
           </h3>
           <p className="text-[#A0A0A0] text-sm">
-            Review the parsed task details before creating
+            Revisa los detalles de la tarea procesada antes de crear
           </p>
         </div>
         
@@ -213,31 +220,31 @@ export function AITaskForm({
           
           {parsedTask.description && (
             <div>
-              <p className="text-sm text-[#A0A0A0] mb-1">Description</p>
+              <p className="text-sm text-[#A0A0A0] mb-1">Descripción</p>
               <p className="text-white">{parsedTask.description}</p>
             </div>
           )}
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-[#A0A0A0] mb-1">Priority</p>
+              <p className="text-sm text-[#A0A0A0] mb-1">Prioridad</p>
               <p className={`font-medium ${getPriorityColor(parsedTask.priority)}`}>
                 {parsedTask.priority}
               </p>
             </div>
             
             <div>
-              <p className="text-sm text-[#A0A0A0] mb-1">Due Date</p>
+              <p className="text-sm text-[#A0A0A0] mb-1">Fecha de Vencimiento</p>
               <p className="text-white">{formatDate(parsedTask.due_date)}</p>
             </div>
             
             {parsedTask.estimated_duration && (
               <div>
-                <p className="text-sm text-[#A0A0A0] mb-1">Estimated Duration</p>
+                <p className="text-sm text-[#A0A0A0] mb-1">Duración Estimada</p>
                 <p className="text-white">
                   {parsedTask.estimated_duration < 60 
-                    ? `${parsedTask.estimated_duration} minutes`
-                    : `${Math.round(parsedTask.estimated_duration / 60)} hours`
+                    ? `${parsedTask.estimated_duration} minutos`
+                    : `${Math.round(parsedTask.estimated_duration / 60)} horas`
                   }
                 </p>
               </div>
@@ -246,7 +253,7 @@ export function AITaskForm({
           
           {parsedTask.tags && parsedTask.tags.length > 0 && (
             <div>
-              <p className="text-sm text-[#A0A0A0] mb-2">Tags</p>
+              <p className="text-sm text-[#A0A0A0] mb-2">Etiquetas</p>
               <div className="flex flex-wrap gap-2">
                 {parsedTask.tags.map((tag, index) => (
                   <span
@@ -262,7 +269,7 @@ export function AITaskForm({
         </div>
         
         <div className="bg-[#1B1B1D] border border-white/8 rounded-lg p-4">
-          <p className="text-sm text-[#A0A0A0] mb-2">Original input:</p>
+          <p className="text-sm text-[#A0A0A0] mb-2">Entrada original:</p>
           <p className="text-white italic">&ldquo;{naturalInput}&rdquo;</p>
         </div>
         
@@ -279,7 +286,7 @@ export function AITaskForm({
             className="px-6 py-2 text-[#A0A0A0] hover:text-white transition-colors"
             disabled={isLoading}
           >
-            ← Back
+            ← Atrás
           </button>
           
           <div className="flex gap-3">
@@ -289,14 +296,14 @@ export function AITaskForm({
               className="px-6 py-2 border border-white/20 text-white rounded-lg hover:bg-white/5 transition-colors"
               disabled={isLoading}
             >
-              Edit Details
+              Editar Detalles
             </button>
             <button
               onClick={handleCreateFromAI}
               className="px-6 py-2 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               disabled={isLoading}
             >
-              {isLoading ? 'Creating...' : 'Create Task'}
+              {isLoading ? 'Creando...' : 'Crear Tarea'}
             </button>
           </div>
         </div>
@@ -320,10 +327,10 @@ export function AITaskForm({
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">
-            Edit Task Details
+            Editar Detalles de la Tarea
           </h3>
           <p className="text-[#A0A0A0] text-sm">
-            Fine-tune the task details before creating
+            Ajusta los detalles de la tarea antes de crear
           </p>
         </div>
         
@@ -332,6 +339,7 @@ export function AITaskForm({
           categories={categories}
           tags={tags}
           goals={goals}
+          selectedGoalId={selectedGoalId}
           onSubmit={onTaskCreated}
           onCancel={() => setStep('preview')}
         />

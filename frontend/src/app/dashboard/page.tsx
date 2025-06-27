@@ -261,7 +261,8 @@ export default function DashboardPage() {
                 // Auto-generate project if confidence is high enough
                 const result = await apiClient.post(`/api/conversations/${newConversation.id}/generate-project`, {
                   analysis,
-                  create_goal: true
+                  create_goal: !selectedProjectId, // Only create new goal if no project is selected
+                  existing_goal_id: selectedProjectId // Use selected project if available
                 });
                 
                 if (result.goal_id) {
@@ -298,7 +299,8 @@ export default function DashboardPage() {
                 const result = await apiClient.post(`/api/conversations/${currentConversationId}/generate-project`, {
                   conversation_id: currentConversationId,
                   analysis,
-                  create_goal: true
+                  create_goal: !selectedProjectId, // Only create new goal if no project is selected
+                  existing_goal_id: selectedProjectId // Use selected project if available
                 });
                 
                 if (result.goal_id) {
@@ -324,10 +326,15 @@ export default function DashboardPage() {
     ? tasks.filter(task => task.goal_id === selectedProjectId)
     : tasks;
 
+  // Get selected project info
+  const selectedProject = selectedProjectId 
+    ? goals.find(goal => goal.id === selectedProjectId)
+    : null;
+
   if (!userLoaded || !authLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0A0A0B]">
-        <div className="text-[#A0A0A0]">Loading...</div>
+        <div className="text-[#A0A0A0]">Cargando...</div>
       </div>
     );
   }
@@ -335,7 +342,7 @@ export default function DashboardPage() {
   if (!isSignedIn) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0A0A0B]">
-        <div className="text-[#A0A0A0]">Please sign in to view your dashboard.</div>
+        <div className="text-[#A0A0A0]">Por favor inicia sesión para ver tu panel de control.</div>
       </div>
     );
   }
@@ -355,7 +362,7 @@ export default function DashboardPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Today
+            Hoy
           </button>
 
           {/* Personal Section */}
@@ -387,7 +394,7 @@ export default function DashboardPage() {
                   }}
                   className="w-full text-left px-3 py-1 text-sm text-[#606060] hover:text-[#A0A0A0] transition-all"
                 >
-                  + New project {hasProPlan === false && goals.length >= 3 && '(Pro)'}
+                  + Nuevo proyecto {hasProPlan === false && goals.length >= 3 && '(Pro)'}
                 </button>
                 {goals.map(goal => (
                   <div key={goal.id} className="group px-3 py-1 flex items-center justify-between gap-2 text-sm text-[#A0A0A0] hover:text-white transition-all cursor-pointer">
@@ -398,7 +405,7 @@ export default function DashboardPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm('Are you sure you want to delete this project and all its tasks?')) {
+                        if (window.confirm('¿Estás seguro de que quieres eliminar este proyecto y todas sus tareas?')) {
                           handleGoalDelete(goal.id);
                         }
                       }}
@@ -428,7 +435,7 @@ export default function DashboardPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Team
+              Equipo
             </button>
           </div>
         </div>
@@ -446,12 +453,12 @@ export default function DashboardPage() {
                 ) : (
                   <ChevronRightIcon className="w-4 h-4" />
                 )}
-                Chats
+                Conversaciones
               </button>
               <button
                 onClick={handleNewChat}
                 className="ml-auto p-1 text-[#606060] hover:text-white transition-all"
-                title="New Chat"
+                title="Nueva Conversación"
               >
                 <PlusIcon className="w-4 h-4" />
               </button>
@@ -460,7 +467,7 @@ export default function DashboardPage() {
               <div className="mt-2 space-y-1">
                 {conversations.length === 0 ? (
                   <div className="px-3 py-2 text-xs text-[#606060]">
-                    Start a conversation to see it here
+                    Inicia una conversación para verla aquí
                   </div>
                 ) : (
                   conversations.map(conv => (
@@ -478,7 +485,7 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-2">
                             <div className="font-medium truncate">{conv.title}</div>
                             {conv.generated_goal_id && (
-                              <span className="text-xs px-1.5 py-0.5 bg-[#4ECDC4]/20 text-[#4ECDC4] rounded" title="Project created">
+                              <span className="text-xs px-1.5 py-0.5 bg-[#4ECDC4]/20 text-[#4ECDC4] rounded" title="Proyecto creado">
                                 ✓
                               </span>
                             )}
@@ -493,7 +500,7 @@ export default function DashboardPage() {
                             handleDeleteConversation(conv.id);
                           }}
                           className="opacity-0 group-hover:opacity-100 p-1 text-[#606060] hover:text-red-400 transition-all"
-                          title="Delete conversation"
+                          title="Eliminar conversación"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1v3M4 7h16" />
@@ -534,6 +541,28 @@ export default function DashboardPage() {
 
       {/* Center Chat Area */}
       <main className="flex-1 flex flex-col">
+        {/* Project Context Header */}
+        {selectedProject && (
+          <div className="flex-shrink-0 border-b border-white/10 bg-[#1A1A1C] px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{selectedProject.icon}</span>
+                <div>
+                  <h3 className="text-white font-medium">{selectedProject.title}</h3>
+                  <p className="text-xs text-[#606060]">Proyecto activo • Las tareas se crearán aquí</p>
+                </div>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: selectedProject.color || '#4ECDC4' }}
+                />
+                <span className="text-xs text-[#606060]">{selectedProject.progress_percentage}% completado</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex-1 flex items-center justify-center p-8">
           {!conversation || conversation.messages.length === 0 ? (
             <div className="text-center max-w-2xl">
@@ -544,28 +573,58 @@ export default function DashboardPage() {
               </div>
               
               <h2 className="text-3xl font-bold text-white mb-6">
-                {currentConversationId ? 'Continue your conversation' : 'What can I help with?'}
+                {selectedProject 
+                  ? `Trabajando en ${selectedProject.title}` 
+                  : currentConversationId 
+                    ? 'Continúa tu conversación' 
+                    : '¿En qué puedo ayudarte?'
+                }
               </h2>
               
               <div className="space-y-3">
-                <button 
-                  onClick={() => setChatInput('plan steps for a community growth')}
-                  className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                >
-                  plan steps for a community growth
-                </button>
-                <button 
-                  onClick={() => setChatInput('brainstorm AI SaaS project ideas')}
-                  className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                >
-                  brainstorm AI SaaS project ideas
-                </button>
-                <button 
-                  onClick={() => setChatInput('outline Agent as a Service roadmap')}
-                  className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                >
-                  outline Agent as a Service roadmap
-                </button>
+                {selectedProject ? (
+                  <>
+                    <button 
+                      onClick={() => setChatInput(`añadir una nueva tarea a ${selectedProject.title}`)}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      añadir una nueva tarea a {selectedProject.title}
+                    </button>
+                    <button 
+                      onClick={() => setChatInput(`desglosa el siguiente hito para ${selectedProject.title}`)}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      desglosa el siguiente hito
+                    </button>
+                    <button 
+                      onClick={() => setChatInput(`revisa y optimiza las tareas de ${selectedProject.title}`)}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      revisa y optimiza las tareas actuales
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => setChatInput('planifica pasos para el crecimiento de una comunidad')}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      planifica pasos para el crecimiento de una comunidad
+                    </button>
+                    <button 
+                      onClick={() => setChatInput('ideas para proyectos de IA SaaS')}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      ideas para proyectos de IA SaaS
+                    </button>
+                    <button 
+                      onClick={() => setChatInput('bosquejo de hoja de ruta para Agente como Servicio')}
+                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                    >
+                      bosquejo de hoja de ruta para Agente como Servicio
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -584,7 +643,7 @@ export default function DashboardPage() {
               {sendingMessage && (
                 <div className="text-left">
                   <div className="inline-block px-4 py-2 rounded-lg bg-[#242426] text-white">
-                    <span className="animate-pulse">Thinking...</span>
+                    <span className="animate-pulse">Pensando...</span>
                   </div>
                 </div>
               )}
@@ -595,7 +654,7 @@ export default function DashboardPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                       </svg>
-                      Agent is creating tasks...
+                      El agente está creando tareas...
                     </span>
                   </div>
                 </div>
@@ -613,11 +672,13 @@ export default function DashboardPage() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder={
-                  chatMode === 'agent' 
-                    ? "Describe your project and I'll create tasks..." 
-                    : currentConversationId 
-                      ? "Continue the conversation..." 
-                      : "Start a new conversation..."
+                  selectedProject
+                    ? `Pregúntame sobre ${selectedProject.title} o añade nuevas tareas...`
+                    : chatMode === 'agent' 
+                      ? "Describe tu proyecto y crearé las tareas..." 
+                      : currentConversationId 
+                        ? "Continúa la conversación..." 
+                        : "Inicia una nueva conversación..."
                 }
                 disabled={sendingMessage}
                 className={`w-full px-4 py-3 bg-[#242426] text-white rounded-lg pr-12 placeholder-[#606060] focus:outline-none focus:ring-2 disabled:opacity-50 ${
@@ -650,7 +711,7 @@ export default function DashboardPage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                  {chatMode === 'agent' ? 'Agent Mode' : 'Agent'}
+                  {chatMode === 'agent' ? 'Modo Agente' : 'Agente'}
                 </button>
               </div>
               
@@ -663,7 +724,7 @@ export default function DashboardPage() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  Generate Project
+                  Generar Proyecto
                 </button>
               )}
             </div>
@@ -702,7 +763,7 @@ export default function DashboardPage() {
                 onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
                 className="w-full bg-[#242426] text-[#A0A0A0] text-sm px-3 py-2 rounded-lg border border-[#606060]/20 focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]/50 focus:border-[#4ECDC4]/50 appearance-none cursor-pointer"
               >
-                <option value="">All Projects</option>
+                <option value="">Todos los Proyectos</option>
                 {goals.map(goal => (
                   <option key={goal.id} value={goal.id}>
                     {goal.icon && `${goal.icon} `}{goal.title}
@@ -720,7 +781,7 @@ export default function DashboardPage() {
               className="w-full flex items-center gap-2 px-4 py-3 bg-[#4ECDC4] text-black rounded-lg hover:bg-[#45B7B8] transition-all font-medium"
             >
               <PlusIcon className="w-5 h-5" />
-              Create Task
+              Crear Tarea
             </button>
             <ProFeatureGateClient
               fallback={
@@ -729,7 +790,7 @@ export default function DashboardPage() {
                   className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-[#606060] border border-[#606060]/20 rounded-lg hover:bg-[#2A2A2C] transition-all font-medium"
                 >
                   <span>✨</span>
-                  Create with AI (Pro)
+                  Crear con IA (Pro)
                 </button>
               }
             >
@@ -738,7 +799,7 @@ export default function DashboardPage() {
                 className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-white border border-[#4ECDC4]/20 rounded-lg hover:bg-[#2A2A2C] hover:border-[#4ECDC4]/40 transition-all font-medium"
               >
                 <span>✨</span>
-                Create with AI
+                Crear con IA
               </button>
             </ProFeatureGateClient>
           </div>
@@ -750,12 +811,12 @@ export default function DashboardPage() {
             {filteredTasks.length === 0 ? (
               <div className="text-center py-8 text-[#606060]">
                 <p className="text-sm">
-                  {selectedProjectId ? 'No tasks in this project' : 'No tasks yet'}
+                  {selectedProjectId ? 'No hay tareas en este proyecto' : 'Aún no hay tareas'}
                 </p>
                 <p className="text-xs mt-1">
                   {selectedProjectId 
-                    ? 'Tasks from this project will appear here' 
-                    : 'Tasks created in chat will appear here'
+                    ? 'Las tareas de este proyecto aparecerán aquí' 
+                    : 'Las tareas creadas en el chat aparecerán aquí'
                   }
                 </p>
               </div>
@@ -812,7 +873,7 @@ export default function DashboardPage() {
                         )}
                         {task.due_date && (
                           <span className="text-xs text-[#606060]">
-                            Due {new Date(task.due_date).toLocaleDateString()}
+                            Vence {new Date(task.due_date).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -826,7 +887,7 @@ export default function DashboardPage() {
                           setEditingTask(task);
                         }}
                         className="p-1 text-[#606060] hover:text-[#4ECDC4] transition-colors"
-                        title="Edit task"
+                        title="Editar tarea"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -835,7 +896,7 @@ export default function DashboardPage() {
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (window.confirm('Are you sure you want to delete this task?')) {
+                          if (window.confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
                             try {
                               await deleteTask(task.id);
                               handleTaskDelete(task.id);
@@ -845,7 +906,7 @@ export default function DashboardPage() {
                           }
                         }}
                         className="p-1 text-[#606060] hover:text-red-400 transition-colors"
-                        title="Delete task"
+                        title="Eliminar tarea"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -865,7 +926,7 @@ export default function DashboardPage() {
           {filteredTasks.some(t => t.status === TaskStatus.COMPLETED) && (
             <div className="pt-4 border-t border-white/10">
               <button className="text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
-                completed tasks
+                tareas completadas
               </button>
             </div>
           )}
@@ -878,13 +939,14 @@ export default function DashboardPage() {
           <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
-                {editingTask ? 'Edit Task' : 'Create New Task'}
+                {editingTask ? 'Editar Tarea' : 'Crear Nueva Tarea'}
               </h2>
               <TaskForm
                 initialData={editingTask || undefined}
                 categories={categories}
                 tags={tags}
                 goals={goals}
+                selectedGoalId={selectedProjectId}
                 onSubmit={editingTask ? () => handleTaskUpdate() : handleTaskCreate}
                 onCancel={() => {
                   setShowTaskForm(false);
@@ -906,6 +968,7 @@ export default function DashboardPage() {
                 categories={categories}
                 tags={tags}
                 goals={goals}
+                selectedGoalId={selectedProjectId}
                 onTaskCreated={() => {
                   setShowAITaskForm(false);
                   loadData(); // Reload tasks after creation
@@ -923,7 +986,7 @@ export default function DashboardPage() {
           <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
-                {editingGoal ? 'Edit Project' : 'Create New Project'}
+                {editingGoal ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}
               </h2>
               <GoalForm
                 initialData={editingGoal || undefined}
@@ -950,10 +1013,10 @@ export default function DashboardPage() {
       {showUpgradePrompt && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 max-w-md w-full px-6 z-50">
           <UpgradePrompt
-            title="Unlock Pro Features"
+            title="Desbloquear Funciones Pro"
             description={hasProPlan === false && goals.length >= 3 
-              ? "You've reached the limit of 3 projects on the Free plan. Upgrade to Pro for unlimited projects, AI task creation, and more!"
-              : "Get AI-powered task creation, unlimited projects, and advanced analytics with Pro."
+              ? "Has alcanzado el límite de 3 proyectos en el plan Gratuito. ¡Actualiza a Pro para proyectos ilimitados, creación de tareas con IA y más!"
+              : "Obtén creación de tareas con IA, proyectos ilimitados y análisis avanzados con Pro."
             }
             onClose={() => setShowUpgradePrompt(false)}
           />
@@ -968,7 +1031,8 @@ export default function DashboardPage() {
           onGenerateProject={(analysis) => generateProject({ 
             conversation_id: currentConversationId, 
             analysis, 
-            create_goal: true 
+            create_goal: !selectedProjectId, // Only create new goal if no project is selected
+            existing_goal_id: selectedProjectId // Use selected project if available
           })}
           onClose={() => setShowAnalysis(false)}
           onProjectCreated={(goalId) => {

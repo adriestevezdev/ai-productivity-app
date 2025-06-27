@@ -79,6 +79,7 @@ class ProjectAnalysis(BaseModel):
 class ProjectGenerationRequest(BaseModel):
     analysis: Optional[ProjectAnalysis] = None
     create_goal: bool = True
+    existing_goal_id: Optional[int] = None
 
 
 class ProjectGenerationResponse(BaseModel):

@@ -28,6 +28,7 @@ class TaskAICreate(BaseModel):
     due_date: Optional[Union[datetime, str]] = None
     estimated_duration: Optional[int] = Field(None, ge=0, description="Duration in minutes")
     tags: Optional[List[str]] = []
+    goal_id: Optional[int] = None
     
     model_config = ConfigDict(
         json_encoders={datetime: lambda v: v.isoformat() if v else None}

@@ -28,11 +28,11 @@ export default function Home() {
               </div>
               
               <h2 className="text-5xl font-bold text-white mb-6">
-                AI-Powered Productivity
+                Productividad Potenciada por IA
               </h2>
               <p className="text-xl text-[#A0A0A0] mb-12 max-w-3xl">
-                Transform your workflow with intelligent task management, smart scheduling, 
-                and AI-driven insights that help you accomplish more with less effort.
+                Transforma tu flujo de trabajo con gestión inteligente de tareas, programación inteligente, 
+                e insights impulsados por IA que te ayudan a lograr más con menos esfuerzo.
               </p>
               
               <div className="space-y-4 mb-16">
@@ -41,23 +41,23 @@ export default function Home() {
                     href="/sign-up"
                     className="bg-[#4ECDC4] text-black px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#45B7B8] transition-colors inline-block"
                   >
-                    Get Started Free
+                    Comenzar Gratis
                   </Link>
                   <Link 
                     href="/sign-in"
                     className="bg-transparent text-white border-2 border-white/20 px-8 py-4 rounded-lg text-lg font-semibold hover:border-white/40 transition-colors inline-block"
                   >
-                    Sign In
+                    Iniciar Sesión
                   </Link>
                   <Link 
                     href="/pricing"
                     className="bg-transparent text-[#4ECDC4] border-2 border-[#4ECDC4]/20 px-8 py-4 rounded-lg text-lg font-semibold hover:border-[#4ECDC4]/40 transition-colors inline-block"
                   >
-                    View Pricing
+                    Ver Precios
                   </Link>
                 </div>
                 <p className="text-sm text-[#606060]">
-                  No credit card required • Start productive immediately
+                  No se requiere tarjeta de crédito • Comienza a ser productivo inmediatamente
                 </p>
               </div>
               
@@ -68,8 +68,8 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-white">Smart Task Management</h3>
-                  <p className="text-[#A0A0A0]">AI-powered task prioritization and intelligent organization that adapts to your workflow</p>
+                  <h3 className="text-lg font-semibold mb-2 text-white">Gestión Inteligente de Tareas</h3>
+                  <p className="text-[#A0A0A0]">Priorización de tareas impulsada por IA y organización inteligente que se adapta a tu flujo de trabajo</p>
                 </div>
                 
                 <div className="text-center p-6 bg-[#1A1A1C] rounded-xl border border-white/8">
@@ -78,8 +78,8 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-white">AI Assistant</h3>
-                  <p className="text-[#A0A0A0]">Natural language task creation and intelligent suggestions powered by advanced AI</p>
+                  <h3 className="text-lg font-semibold mb-2 text-white">Asistente IA</h3>
+                  <p className="text-[#A0A0A0]">Creación de tareas en lenguaje natural y sugerencias inteligentes impulsadas por IA avanzada</p>
                 </div>
                 
                 <div className="text-center p-6 bg-[#1A1A1C] rounded-xl border border-white/8">
@@ -88,8 +88,8 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-white">Productivity Analytics</h3>
-                  <p className="text-[#A0A0A0]">Deep insights into your productivity patterns with actionable recommendations</p>
+                  <h3 className="text-lg font-semibold mb-2 text-white">Análisis de Productividad</h3>
+                  <p className="text-[#A0A0A0]">Insights profundos sobre tus patrones de productividad con recomendaciones accionables</p>
                 </div>
               </div>
 
@@ -151,7 +151,7 @@ export default function Home() {
                         <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        AI-powered task creation
+                        Creación de tareas con IA
                       </li>
                       <li className="flex items-center text-white">
                         <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

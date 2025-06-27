@@ -173,6 +173,7 @@ async def create_task_from_ai(
         priority=TaskPriority(ai_task.priority) if isinstance(ai_task.priority, str) else ai_task.priority,
         due_date=datetime.fromisoformat(ai_task.due_date.replace('Z', '+00:00')) if isinstance(ai_task.due_date, str) else ai_task.due_date,
         estimated_hours=ai_task.estimated_duration // 60 if ai_task.estimated_duration else None,
+        goal_id=ai_task.goal_id,
         tag_ids=[]
     )
     

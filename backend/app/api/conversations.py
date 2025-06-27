@@ -358,7 +358,10 @@ async def generate_project_from_conversation(
     created_goal_id = None
     created_tasks = []
     
-    if request.create_goal and analysis.confidence_score >= 0.5:
+    # Use existing goal if provided, otherwise create new one
+    target_goal_id = request.existing_goal_id
+    
+    if request.create_goal and analysis.confidence_score >= 0.5 and not target_goal_id:
         try:
             # Create the goal/project
             goal = Goal(
@@ -377,6 +380,25 @@ async def generate_project_from_conversation(
             db.commit()
             db.refresh(goal)
             created_goal_id = goal.id
+            target_goal_id = goal.id
+            
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error creating goal: {str(e)}"
+            )
+    
+    # Create suggested tasks (either for new goal or existing goal)
+    if target_goal_id and analysis.confidence_score >= 0.5:
+        try:
+            # Verify the goal exists and belongs to the user
+            existing_goal = db.query(Goal).filter(
+                and_(Goal.id == target_goal_id, Goal.user_id == current_user)
+            ).first()
+            
+            if not existing_goal:
+                raise HTTPException(status_code=404, detail="Goal not found")
             
             # Create suggested tasks
             for task_data in analysis.suggested_tasks:
@@ -386,7 +408,7 @@ async def generate_project_from_conversation(
                     priority=TaskPriority(task_data.get("priority", "medium")),
                     status=TaskStatus.TODO,
                     estimated_hours=int(task_data.get("estimated_duration", 60) / 60),
-                    goal_id=goal.id,
+                    goal_id=target_goal_id,
                     user_id=current_user,
                     position=len(created_tasks),
                     ai_score=85  # Mark as AI-generated
@@ -400,8 +422,8 @@ async def generate_project_from_conversation(
                     "estimated_hours": task.estimated_hours
                 })
             
-            # Link conversation to generated goal
-            conversation.generated_goal_id = goal.id
+            # Link conversation to the goal (either created or existing)
+            conversation.generated_goal_id = target_goal_id
             # Keep conversation ACTIVE to allow further discussion about the project
             
             db.commit()
@@ -410,12 +432,12 @@ async def generate_project_from_conversation(
             db.rollback()
             raise HTTPException(
                 status_code=500,
-                detail=f"Error creating project: {str(e)}"
+                detail=f"Error creating tasks: {str(e)}"
             )
     
     return ProjectGenerationResponse(
         analysis=analysis,
-        goal_id=created_goal_id,
+        goal_id=target_goal_id or created_goal_id,
         created_tasks=created_tasks
     )
 
