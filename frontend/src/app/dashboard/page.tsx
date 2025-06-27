@@ -169,6 +169,31 @@ export default function DashboardPage() {
     }
   }, [conversation?.messages, sendingMessage, agentProcessing]);
 
+  // Handle Escape key to close modals
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (editingTask) {
+          setEditingTask(null);
+        } else if (showTaskForm) {
+          setShowTaskForm(false);
+        } else if (showAITaskForm) {
+          setShowAITaskForm(false);
+        } else if (showGoalForm || editingGoal) {
+          setShowGoalForm(false);
+          setEditingGoal(null);
+        } else if (showAnalysis) {
+          setShowAnalysis(false);
+        } else if (showUpgradePrompt) {
+          setShowUpgradePrompt(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [editingTask, showTaskForm, showAITaskForm, showGoalForm, editingGoal, showAnalysis, showUpgradePrompt]);
+
   const handleTaskCreate = async () => {
     setShowTaskForm(false);
     await loadData();
@@ -835,12 +860,14 @@ export default function DashboardPage() {
                 <div
                   key={task.id}
                   className="group p-3 bg-[#242426] rounded-lg hover:bg-[#2A2A2C] transition-all cursor-pointer relative"
+                  onClick={() => setEditingTask(task)}
                 >
                   <div className="flex items-start gap-2">
                     <input
                       type="checkbox"
                       checked={task.status === TaskStatus.COMPLETED}
-                      onChange={async () => {
+                      onChange={async (e) => {
+                        e.stopPropagation();
                         const newStatus = task.status === TaskStatus.COMPLETED ? TaskStatus.TODO : TaskStatus.COMPLETED;
                         try {
                           const updatedTask = await updateTaskStatus(task.id, newStatus);
@@ -849,6 +876,7 @@ export default function DashboardPage() {
                           console.error('Failed to update task status:', error);
                         }
                       }}
+                      onClick={(e) => e.stopPropagation()}
                       className="mt-1 rounded border-[#606060] bg-transparent"
                     />
                     <div className="flex-1">
@@ -889,20 +917,8 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     
-                    {/* Action buttons - visible on hover */}
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingTask(task);
-                        }}
-                        className="p-1 text-[#606060] hover:text-[#4ECDC4] transition-colors"
-                        title="Editar tarea"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
+                    {/* Delete button - visible on hover */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -945,8 +961,17 @@ export default function DashboardPage() {
 
       {/* Task form modal */}
       {(showTaskForm || editingTask) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+          onClick={() => {
+            setShowTaskForm(false);
+            setEditingTask(null);
+          }}
+        >
+          <div 
+            className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
                 {editingTask ? 'Editar Tarea' : 'Crear Nueva Tarea'}
@@ -971,8 +996,14 @@ export default function DashboardPage() {
 
       {/* AI Task form modal */}
       {showAITaskForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+          onClick={() => setShowAITaskForm(false)}
+        >
+          <div 
+            className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <AITaskForm
                 categories={categories}
@@ -992,8 +1023,17 @@ export default function DashboardPage() {
 
       {/* Goal form modal */}
       {(showGoalForm || editingGoal) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+          onClick={() => {
+            setShowGoalForm(false);
+            setEditingGoal(null);
+          }}
+        >
+          <div 
+            className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
                 {editingGoal ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}
@@ -1021,15 +1061,23 @@ export default function DashboardPage() {
 
       {/* Upgrade prompt */}
       {showUpgradePrompt && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 max-w-md w-full px-6 z-50">
-          <UpgradePrompt
-            title="Desbloquear Funciones Pro"
-            description={hasProPlan === false && goals.length >= 3 
-              ? "Has alcanzado el límite de 3 proyectos en el plan Gratuito. ¡Actualiza a Pro para proyectos ilimitados, creación de tareas con IA y más!"
-              : "Obtén creación de tareas con IA, proyectos ilimitados y análisis avanzados con Pro."
-            }
-            onClose={() => setShowUpgradePrompt(false)}
-          />
+        <div 
+          className="fixed inset-0 bg-black/20 flex items-end justify-center z-50"
+          onClick={() => setShowUpgradePrompt(false)}
+        >
+          <div 
+            className="mb-6 max-w-md w-full px-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <UpgradePrompt
+              title="Desbloquear Funciones Pro"
+              description={hasProPlan === false && goals.length >= 3 
+                ? "Has alcanzado el límite de 3 proyectos en el plan Gratuito. ¡Actualiza a Pro para proyectos ilimitados, creación de tareas con IA y más!"
+                : "Obtén creación de tareas con IA, proyectos ilimitados y análisis avanzados con Pro."
+              }
+              onClose={() => setShowUpgradePrompt(false)}
+            />
+          </div>
         </div>
       )}
 
