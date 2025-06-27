@@ -66,7 +66,11 @@ export function useConversation(conversationId: number | null) {
   const { canUse, incrementUsage, isPro } = useSubscriptionAwareFeatureUsage(ProFeature.AI_TASK_CREATION);
 
   const fetchConversation = useCallback(async () => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      setConversation(null);
+      setError(null);
+      return;
+    }
     
     try {
       setLoading(true);
