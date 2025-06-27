@@ -35,6 +35,14 @@ app.include_router(goals_router)
 from app.api.task_ai import router as task_ai_router
 app.include_router(task_ai_router)
 
+# Import and include AI analytics router
+from app.api.ai import router as ai_router
+app.include_router(ai_router)
+
+# Import and include subscription router
+from app.api.subscriptions import router as subscriptions_router
+app.include_router(subscriptions_router)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to AI Productivity App API"}

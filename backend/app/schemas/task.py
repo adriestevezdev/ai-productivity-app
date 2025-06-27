@@ -147,3 +147,16 @@ class TaskTag(TaskTagBase):
     updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# AI Subtask Suggestion schemas
+class SubtaskSuggestion(BaseModel):
+    title: str
+    description: str
+    estimated_duration: int  # in minutes
+    priority: str
+
+
+class TaskSubtaskSuggestion(BaseModel):
+    task_id: int
+    subtasks: List[SubtaskSuggestion]

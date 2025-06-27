@@ -6,6 +6,7 @@ from datetime import datetime
 
 from app.db.database import get_db
 from app.middleware.auth import get_current_user
+from app.middleware.subscription_middleware import validate_ai_task_limit
 from app.models.task import Task, TaskCategory, TaskTag, TaskStatus, TaskPriority
 from app.schemas.task import (
     Task as TaskSchema,
@@ -20,7 +21,9 @@ from app.schemas.task import (
     TaskTag as TaskTagSchema,
     TaskTagCreate,
     TaskTagUpdate,
-    TaskAICreate
+    TaskAICreate,
+    TaskSubtaskSuggestion,
+    SubtaskSuggestion
 )
 from app.services.ai_service import get_ai_service
 
@@ -132,7 +135,8 @@ async def create_task(
 @router.post("/tasks/parse-ai", response_model=TaskAICreate)
 async def parse_task_with_ai(
     description: str = Query(..., description="Natural language task description"),
-    current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user),
+    validation_result: dict = Depends(validate_ai_task_limit)
 ):
     """Parse natural language task description using AI"""
     ai_service = get_ai_service()
@@ -158,7 +162,8 @@ async def parse_task_with_ai(
 async def create_task_from_ai(
     ai_task: TaskAICreate,
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user),
+    validation_result: dict = Depends(validate_ai_task_limit)
 ):
     """Create a task from AI-parsed data"""
     # Convert AI task to regular task create
@@ -561,3 +566,57 @@ async def delete_tag(
     db.commit()
     
     return {"message": "Tag deleted successfully"}
+
+
+# AI Subtask Suggestions endpoint
+@router.post("/tasks/{task_id}/suggest-subtasks", response_model=TaskSubtaskSuggestion)
+async def suggest_subtasks(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+    validation_result: dict = Depends(validate_ai_task_limit)
+):
+    """Suggest subtasks for a given task using AI"""
+    # Get the task
+    task = db.query(Task).filter(
+        and_(Task.id == task_id, Task.user_id == current_user)
+    ).first()
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Get AI service
+    ai_service = get_ai_service()
+    if not ai_service:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service is not configured. Please set up your OpenAI API key."
+        )
+    
+    try:
+        # Get AI suggestions
+        subtask_suggestions = ai_service.suggest_subtasks(
+            task.title,
+            task.description or task.title
+        )
+        
+        # Convert to response format
+        subtasks = []
+        for suggestion in subtask_suggestions:
+            subtasks.append(SubtaskSuggestion(
+                title=suggestion["title"],
+                description=suggestion["description"],
+                estimated_duration=suggestion["estimated_duration"],
+                priority=suggestion["priority"]
+            ))
+        
+        return TaskSubtaskSuggestion(
+            task_id=task_id,
+            subtasks=subtasks
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate subtask suggestions: {str(e)}"
+        )

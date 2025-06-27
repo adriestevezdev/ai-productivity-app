@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/factursaas"
     CLERK_SECRET_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+    INTERNAL_API_SECRET: Optional[str] = None
     
     class Config:
         env_file = ".env"

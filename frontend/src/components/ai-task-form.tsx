@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { TaskAICreate, TaskPriority, TaskCategory, TaskTag, Goal } from '@/types/task';
 import { useApiClient } from '@/lib/api-client';
 import { TaskForm } from './task-form';
+import { useSubscriptionAwareFeatureUsage } from '@/hooks/use-subscription-aware-feature-usage';
+import { ProFeature, FREE_TIER_LIMITS } from '@/lib/features';
 
 interface AITaskFormProps {
   categories: TaskCategory[];
@@ -21,6 +23,7 @@ export function AITaskForm({
   onCancel 
 }: AITaskFormProps) {
   const apiClient = useApiClient();
+  const { canUse, incrementUsage, remainingUses, isPro, isLoading: subscriptionLoading, usageMessage } = useSubscriptionAwareFeatureUsage(ProFeature.AI_TASK_CREATION);
   const [step, setStep] = useState<'input' | 'preview' | 'form'>('input');
   const [naturalInput, setNaturalInput] = useState('');
   const [parsedTask, setParsedTask] = useState<TaskAICreate | null>(null);
@@ -33,12 +36,22 @@ export function AITaskForm({
       return;
     }
     
+    if (!canUse) {
+      if (isPro) {
+        setError('AI task creation is temporarily unavailable. Please try again later.');
+      } else {
+        setError(`You've reached your daily limit of ${FREE_TIER_LIMITS.MAX_AI_TASKS_PER_DAY} AI tasks. Upgrade to Pro for unlimited AI task creation.`);
+      }
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
     try {
       const response = await apiClient.post<TaskAICreate>('/api/tasks/parse-ai?description=' + encodeURIComponent(naturalInput));
       
+      incrementUsage();
       setParsedTask(response);
       setStep('preview');
     } catch (err) {
@@ -111,6 +124,12 @@ export function AITaskForm({
           <p className="text-[#A0A0A0] text-sm">
             Describe your task in natural language and let AI help you organize it
           </p>
+          {/* Usage indicator */}
+          {!subscriptionLoading && (
+            <div className="mt-2 text-xs text-[#606060]">
+              {usageMessage}
+            </div>
+          )}
         </div>
         
         <div>

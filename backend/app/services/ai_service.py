@@ -140,6 +140,200 @@ class AIService:
         
         # If we can't parse it, return None
         return None
+    
+    def suggest_subtasks(self, task_title: str, task_description: str) -> list[Dict[str, Any]]:
+        """
+        Suggest subtasks based on task title and description using OpenAI
+        """
+        system_prompt = """You are a task breakdown assistant. Given a task title and description, 
+        suggest 3-5 specific, actionable subtasks that would help complete the main task.
+        
+        Return a JSON array of subtasks, each with:
+        - title: A concise, actionable title (start with a verb)
+        - description: Brief description of what needs to be done
+        - estimated_duration: Estimated time in minutes
+        - priority: Priority level (low, medium, high) based on importance to main task
+        
+        Return ONLY valid JSON array without any markdown formatting or explanation.
+        
+        Example output: [
+            {
+                "title": "Research competitor pricing",
+                "description": "Analyze pricing models of top 3 competitors",
+                "estimated_duration": 60,
+                "priority": "high"
+            },
+            {
+                "title": "Create pricing comparison table",
+                "description": "Document findings in a structured format",
+                "estimated_duration": 30,
+                "priority": "medium"
+            }
+        ]
+        """
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Task: {task_title}\nDescription: {task_description}\n\nSuggest subtasks:"}
+                ],
+                temperature=0.7,
+                max_tokens=800
+            )
+            
+            # Extract JSON from response
+            content = response.choices[0].message.content
+            
+            # Clean the response if it contains markdown
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0]
+            
+            # Parse JSON
+            subtasks = json.loads(content.strip())
+            
+            # Validate each subtask
+            validated_subtasks = []
+            for subtask in subtasks:
+                if isinstance(subtask, dict) and subtask.get("title"):
+                    validated_subtask = {
+                        "title": subtask.get("title", ""),
+                        "description": subtask.get("description", ""),
+                        "estimated_duration": subtask.get("estimated_duration", 30),
+                        "priority": subtask.get("priority", "medium")
+                    }
+                    validated_subtasks.append(validated_subtask)
+            
+            return validated_subtasks[:5]  # Limit to 5 subtasks
+            
+        except Exception as e:
+            # Return empty list on error
+            print(f"Error suggesting subtasks: {str(e)}")
+            return []
+    
+    def break_down_goal(self, goal_title: str, goal_description: str, goal_specifics: Dict[str, str]) -> Dict[str, Any]:
+        """
+        Break down a SMART goal into actionable milestones, metrics, and tasks using AI
+        """
+        system_prompt = """You are a goal planning assistant specializing in SMART goals. Given a goal with its SMART components,
+        create a comprehensive breakdown including milestones, success metrics, and potential obstacles.
+        
+        Return a JSON object with:
+        - milestones: Array of 3-5 major milestones, each with:
+          - title: Concise milestone title
+          - description: What needs to be achieved
+          - target_date: Suggested completion date (relative like "2 weeks", "1 month")
+          - estimated_hours: Hours needed for this milestone
+        
+        - success_metrics: Array of 2-4 measurable success criteria, each with:
+          - metric: What to measure
+          - target_value: The target to achieve
+          - measurement_method: How to measure it
+        
+        - estimated_total_hours: Total hours for the entire goal
+        
+        - potential_obstacles: Array of 2-3 likely challenges, each with:
+          - obstacle: Description of the challenge
+          - likelihood: "high", "medium", or "low"
+          - mitigation_strategy: How to address it
+        
+        - recommended_tasks: Array of 5-8 initial tasks to get started, each with:
+          - title: Task title
+          - description: Brief description
+          - milestone: Which milestone it belongs to (by index, starting at 0)
+          - estimated_duration: Duration in minutes
+          - priority: "high", "medium", or "low"
+        
+        Return ONLY valid JSON without any markdown formatting or explanation.
+        """
+        
+        # Build context from SMART components
+        context = f"""Goal: {goal_title}
+Description: {goal_description}
+
+SMART Components:
+- Specific: {goal_specifics.get('specific', 'Not specified')}
+- Measurable: {goal_specifics.get('measurable', 'Not specified')}
+- Achievable: {goal_specifics.get('achievable', 'Not specified')}
+- Relevant: {goal_specifics.get('relevant', 'Not specified')}
+- Time-bound: {goal_specifics.get('time_bound', 'Not specified')}"""
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"Break down this goal:\n\n{context}"}
+                ],
+                temperature=0.7,
+                max_tokens=1500
+            )
+            
+            # Extract JSON from response
+            content = response.choices[0].message.content
+            
+            # Clean the response if it contains markdown
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0]
+            
+            # Parse JSON
+            breakdown = json.loads(content.strip())
+            
+            # Validate and ensure all required fields exist
+            breakdown.setdefault("milestones", [])
+            breakdown.setdefault("success_metrics", [])
+            breakdown.setdefault("estimated_total_hours", 40)
+            breakdown.setdefault("potential_obstacles", [])
+            breakdown.setdefault("recommended_tasks", [])
+            
+            return breakdown
+            
+        except Exception as e:
+            # Return a basic breakdown on error
+            print(f"Error breaking down goal: {str(e)}")
+            return {
+                "milestones": [
+                    {
+                        "title": "Initial Planning",
+                        "description": "Define clear action steps and timeline",
+                        "target_date": "1 week",
+                        "estimated_hours": 5
+                    },
+                    {
+                        "title": "Implementation Phase",
+                        "description": "Execute the main work required",
+                        "target_date": "1 month",
+                        "estimated_hours": 20
+                    },
+                    {
+                        "title": "Review and Completion",
+                        "description": "Finalize and measure success",
+                        "target_date": "6 weeks",
+                        "estimated_hours": 5
+                    }
+                ],
+                "success_metrics": [
+                    {
+                        "metric": "Goal Completion",
+                        "target_value": "100%",
+                        "measurement_method": "Track milestone completion"
+                    }
+                ],
+                "estimated_total_hours": 30,
+                "potential_obstacles": [
+                    {
+                        "obstacle": "Time constraints",
+                        "likelihood": "medium",
+                        "mitigation_strategy": "Block dedicated time slots in calendar"
+                    }
+                ],
+                "recommended_tasks": []
+            }
 
 # Lazy singleton instance
 _ai_service: Optional[AIService] = None
