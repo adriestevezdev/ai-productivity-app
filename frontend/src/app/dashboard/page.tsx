@@ -50,6 +50,7 @@ export default function DashboardPage() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [chatMode, setChatMode] = useState<'chat' | 'agent'>('chat');
   const [agentProcessing, setAgentProcessing] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   // Use conversation hooks
   const { conversations, createConversation, fetchConversations } = useConversations();
@@ -317,6 +318,11 @@ export default function DashboardPage() {
       console.error('Failed to send message:', error);
     }
   };
+
+  // Filter tasks based on selected project
+  const filteredTasks = selectedProjectId 
+    ? tasks.filter(task => task.goal_id === selectedProjectId)
+    : tasks;
 
   if (!userLoaded || !authLoaded) {
     return (
@@ -685,16 +691,26 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </button>
-              <span className="text-xs text-[#606060] bg-[#242426] px-2 py-1 rounded">{tasks.length}</span>
+              <span className="text-xs text-[#606060] bg-[#242426] px-2 py-1 rounded">{filteredTasks.length}</span>
             </div>
           </div>
 
           <div className="mb-4">
-            <button className="flex items-center gap-2 text-sm text-[#A0A0A0]">
-              <span className="text-[#606060]">●</span>
-              All Personal Tasks
-              <ChevronDownIcon className="w-4 h-4 ml-auto" />
-            </button>
+            <div className="relative">
+              <select
+                value={selectedProjectId || ''}
+                onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full bg-[#242426] text-[#A0A0A0] text-sm px-3 py-2 rounded-lg border border-[#606060]/20 focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]/50 focus:border-[#4ECDC4]/50 appearance-none cursor-pointer"
+              >
+                <option value="">All Projects</option>
+                {goals.map(goal => (
+                  <option key={goal.id} value={goal.id}>
+                    {goal.icon && `${goal.icon} `}{goal.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-[#606060] pointer-events-none" />
+            </div>
           </div>
 
           {/* Create Task Buttons */}
@@ -731,13 +747,20 @@ export default function DashboardPage() {
         {/* Scrollable Tasks List */}
         <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-2">
-            {tasks.length === 0 ? (
+            {filteredTasks.length === 0 ? (
               <div className="text-center py-8 text-[#606060]">
-                <p className="text-sm">No tasks yet</p>
-                <p className="text-xs mt-1">Tasks created in chat will appear here</p>
+                <p className="text-sm">
+                  {selectedProjectId ? 'No tasks in this project' : 'No tasks yet'}
+                </p>
+                <p className="text-xs mt-1">
+                  {selectedProjectId 
+                    ? 'Tasks from this project will appear here' 
+                    : 'Tasks created in chat will appear here'
+                  }
+                </p>
               </div>
             ) : (
-              tasks.map(task => (
+              filteredTasks.map(task => (
                 <div
                   key={task.id}
                   className="group p-3 bg-[#242426] rounded-lg hover:bg-[#2A2A2C] transition-all cursor-pointer relative"
@@ -839,7 +862,7 @@ export default function DashboardPage() {
         {/* Fixed Footer */}
         <div className="p-6 pt-0 flex-shrink-0">
           {/* Completed tasks toggle */}
-          {tasks.some(t => t.status === TaskStatus.COMPLETED) && (
+          {filteredTasks.some(t => t.status === TaskStatus.COMPLETED) && (
             <div className="pt-4 border-t border-white/10">
               <button className="text-sm text-[#606060] hover:text-[#A0A0A0] transition-all">
                 completed tasks
