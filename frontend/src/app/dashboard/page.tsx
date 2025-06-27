@@ -10,6 +10,9 @@ import { AITaskForm } from '@/components/ai-task-form';
 import { GoalForm } from '@/components/goal-form';
 import { useAuth } from '@clerk/nextjs';
 import { ChevronRightIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { UserPlanStatusClient } from '@/components/user-plan-status-client';
+import { ProFeatureGateClient } from '@/components/pro-feature-gate-client';
+import { UpgradePrompt } from '@/components/upgrade-prompt';
 
 export default function DashboardPage() {
   const apiClient = useApiClient();
@@ -39,6 +42,8 @@ export default function DashboardPage() {
   const [chatsExpanded, setChatsExpanded] = useState(true);
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{type: 'user' | 'assistant', content: string}>>([]);
+  const [hasProPlan, setHasProPlan] = useState<boolean | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -125,6 +130,18 @@ export default function DashboardPage() {
       loadData();
     }
   }, [authLoaded, isSignedIn, loadData]);
+
+  // Check Pro plan status
+  const { has } = useAuth();
+  useEffect(() => {
+    async function checkProPlan() {
+      if (has) {
+        const isPro = await has({ plan: 'pro' });
+        setHasProPlan(isPro);
+      }
+    }
+    checkProPlan();
+  }, [has]);
 
   const handleTaskCreate = async () => {
     setShowTaskForm(false);
@@ -242,10 +259,16 @@ export default function DashboardPage() {
             {personalExpanded && (
               <div className="ml-8 mt-1 space-y-1">
                 <button 
-                  onClick={() => setShowGoalForm(true)}
+                  onClick={() => {
+                    if (hasProPlan === false && goals.length >= 3) {
+                      setShowUpgradePrompt(true);
+                      return;
+                    }
+                    setShowGoalForm(true);
+                  }}
                   className="w-full text-left px-3 py-1 text-sm text-[#606060] hover:text-[#A0A0A0] transition-all"
                 >
-                  + New project
+                  + New project {hasProPlan === false && goals.length >= 3 && '(Pro)'}
                 </button>
                 {goals.map(goal => (
                   <div key={goal.id} className="group px-3 py-1 flex items-center justify-between gap-2 text-sm text-[#A0A0A0] hover:text-white transition-all cursor-pointer">
@@ -337,7 +360,7 @@ export default function DashboardPage() {
               />
               <div className="text-sm">
                 <div className="text-white">{user?.firstName || 'User'}</div>
-                <div className="text-xs text-[#606060]">Productiv Free</div>
+                <UserPlanStatusClient />
               </div>
             </div>
           </div>
@@ -471,13 +494,25 @@ export default function DashboardPage() {
               <PlusIcon className="w-5 h-5" />
               Create Task
             </button>
-            <button
-              onClick={() => setShowAITaskForm(true)}
-              className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-white border border-[#4ECDC4]/20 rounded-lg hover:bg-[#2A2A2C] hover:border-[#4ECDC4]/40 transition-all font-medium"
+            <ProFeatureGateClient
+              fallback={
+                <button
+                  onClick={() => setShowUpgradePrompt(true)}
+                  className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-[#606060] border border-[#606060]/20 rounded-lg hover:bg-[#2A2A2C] transition-all font-medium"
+                >
+                  <span>✨</span>
+                  Create with AI (Pro)
+                </button>
+              }
             >
-              <span>✨</span>
-              Create with AI
-            </button>
+              <button
+                onClick={() => setShowAITaskForm(true)}
+                className="w-full flex items-center gap-2 px-4 py-3 bg-[#242426] text-white border border-[#4ECDC4]/20 rounded-lg hover:bg-[#2A2A2C] hover:border-[#4ECDC4]/40 transition-all font-medium"
+              >
+                <span>✨</span>
+                Create with AI
+              </button>
+            </ProFeatureGateClient>
           </div>
         </div>
 
@@ -673,6 +708,20 @@ export default function DashboardPage() {
       {error && (
         <div className="fixed bottom-6 right-6 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
           {error}
+        </div>
+      )}
+
+      {/* Upgrade prompt */}
+      {showUpgradePrompt && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 max-w-md w-full px-6 z-50">
+          <UpgradePrompt
+            title="Unlock Pro Features"
+            description={hasProPlan === false && goals.length >= 3 
+              ? "You've reached the limit of 3 projects on the Free plan. Upgrade to Pro for unlimited projects, AI task creation, and more!"
+              : "Get AI-powered task creation, unlimited projects, and advanced analytics with Pro."
+            }
+            onClose={() => setShowUpgradePrompt(false)}
+          />
         </div>
       )}
     </div>

@@ -49,6 +49,12 @@ export default function Home() {
                   >
                     Sign In
                   </Link>
+                  <Link 
+                    href="/pricing"
+                    className="bg-transparent text-[#4ECDC4] border-2 border-[#4ECDC4]/20 px-8 py-4 rounded-lg text-lg font-semibold hover:border-[#4ECDC4]/40 transition-colors inline-block"
+                  >
+                    View Pricing
+                  </Link>
                 </div>
                 <p className="text-sm text-[#606060]">
                   No credit card required • Start productive immediately
@@ -84,6 +90,95 @@ export default function Home() {
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-white">Productivity Analytics</h3>
                   <p className="text-[#A0A0A0]">Deep insights into your productivity patterns with actionable recommendations</p>
+                </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="mt-24 mb-16">
+                <h2 className="text-3xl font-bold text-white text-center mb-12">
+                  Simple, Transparent Pricing
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                  {/* Free Plan */}
+                  <div className="bg-[#1A1A1C] rounded-xl border border-white/8 p-8">
+                    <h3 className="text-2xl font-bold text-white mb-2">Free</h3>
+                    <p className="text-[#A0A0A0] mb-6">Perfect for getting started</p>
+                    <div className="text-4xl font-bold text-white mb-6">$0<span className="text-lg text-[#606060]">/month</span></div>
+                    <ul className="space-y-3 mb-8">
+                      <li className="flex items-center text-[#A0A0A0]">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Up to 3 projects
+                      </li>
+                      <li className="flex items-center text-[#A0A0A0]">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Basic task management
+                      </li>
+                      <li className="flex items-center text-[#A0A0A0]">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Manual task creation
+                      </li>
+                    </ul>
+                    <Link
+                      href="/sign-up"
+                      className="block text-center bg-transparent text-white border-2 border-white/20 px-6 py-3 rounded-lg font-semibold hover:border-white/40 transition-colors"
+                    >
+                      Start Free
+                    </Link>
+                  </div>
+
+                  {/* Pro Plan */}
+                  <div className="bg-[#1A1A1C] rounded-xl border-2 border-[#4ECDC4] p-8 relative">
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-[#4ECDC4] text-black px-4 py-1 rounded-full text-sm font-semibold">
+                      RECOMMENDED
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+                    <p className="text-[#A0A0A0] mb-6">For power users and teams</p>
+                    <div className="text-4xl font-bold text-white mb-6">$9<span className="text-lg text-[#606060]">/month</span></div>
+                    <ul className="space-y-3 mb-8">
+                      <li className="flex items-center text-white">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Unlimited projects
+                      </li>
+                      <li className="flex items-center text-white">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        AI-powered task creation
+                      </li>
+                      <li className="flex items-center text-white">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Advanced analytics
+                      </li>
+                      <li className="flex items-center text-white">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Priority support
+                      </li>
+                      <li className="flex items-center text-white">
+                        <svg className="w-5 h-5 text-[#4ECDC4] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Team collaboration
+                      </li>
+                    </ul>
+                    <Link
+                      href="/pricing"
+                      className="block text-center bg-[#4ECDC4] text-black px-6 py-3 rounded-lg font-semibold hover:bg-[#45B7B8] transition-colors"
+                    >
+                      Upgrade to Pro
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
