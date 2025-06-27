@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Task, TaskCategory, TaskTag, TaskStatus, Goal, GoalType, GoalStatus } from '@/types/task';
 import { useApiClient } from '@/lib/api-client';
@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [chatMode, setChatMode] = useState<'chat' | 'agent'>('chat');
   const [agentProcessing, setAgentProcessing] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Use conversation hooks
   const { conversations, createConversation, fetchConversations } = useConversations();
@@ -160,6 +161,13 @@ export default function DashboardPage() {
     }
     checkProPlan();
   }, [has]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [conversation?.messages, sendingMessage, agentProcessing]);
 
   const handleTaskCreate = async () => {
     setShowTaskForm(false);
@@ -348,7 +356,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0A0A0B]">
+    <div className="flex h-screen bg-[#0A0A0B] overflow-hidden">
       {/* Left Sidebar */}
       <aside className="w-56 bg-[#1A1A1C] border-r border-white/10 flex flex-col">
         <div className="p-4">
@@ -540,7 +548,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* Center Chat Area */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col h-screen">
         {/* Project Context Header */}
         {selectedProject && (
           <div className="flex-shrink-0 border-b border-white/10 bg-[#1A1A1C] px-6 py-4">
@@ -563,108 +571,110 @@ export default function DashboardPage() {
           </div>
         )}
         
-        <div className="flex-1 flex items-center justify-center p-8">
-          {!conversation || conversation.messages.length === 0 ? (
-            <div className="text-center max-w-2xl">
-              <div className="w-24 h-24 bg-[#242426] rounded-2xl flex items-center justify-center mx-auto mb-8">
-                <svg className="w-12 h-12 text-[#4ECDC4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-8 min-h-0 custom-scrollbar">
+          <div className="flex items-center justify-center min-h-full">
+            {!conversation || conversation.messages.length === 0 ? (
+              <div className="text-center max-w-2xl">
+                <div className="w-24 h-24 bg-[#242426] rounded-2xl flex items-center justify-center mx-auto mb-8">
+                  <svg className="w-12 h-12 text-[#4ECDC4]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                
+                <h2 className="text-3xl font-bold text-white mb-6">
+                  {selectedProject 
+                    ? `Trabajando en ${selectedProject.title}` 
+                    : currentConversationId 
+                      ? 'Continúa tu conversación' 
+                      : '¿En qué puedo ayudarte?'
+                  }
+                </h2>
+                
+                <div className="space-y-3">
+                  {selectedProject ? (
+                    <>
+                      <button 
+                        onClick={() => setChatInput(`añadir una nueva tarea a ${selectedProject.title}`)}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        añadir una nueva tarea a {selectedProject.title}
+                      </button>
+                      <button 
+                        onClick={() => setChatInput(`desglosa el siguiente hito para ${selectedProject.title}`)}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        desglosa el siguiente hito
+                      </button>
+                      <button 
+                        onClick={() => setChatInput(`revisa y optimiza las tareas de ${selectedProject.title}`)}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        revisa y optimiza las tareas actuales
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => setChatInput('planifica pasos para el crecimiento de una comunidad')}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        planifica pasos para el crecimiento de una comunidad
+                      </button>
+                      <button 
+                        onClick={() => setChatInput('ideas para proyectos de IA SaaS')}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        ideas para proyectos de IA SaaS
+                      </button>
+                      <button 
+                        onClick={() => setChatInput('bosquejo de hoja de ruta para Agente como Servicio')}
+                        className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
+                      >
+                        bosquejo de hoja de ruta para Agente como Servicio
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              
-              <h2 className="text-3xl font-bold text-white mb-6">
-                {selectedProject 
-                  ? `Trabajando en ${selectedProject.title}` 
-                  : currentConversationId 
-                    ? 'Continúa tu conversación' 
-                    : '¿En qué puedo ayudarte?'
-                }
-              </h2>
-              
-              <div className="space-y-3">
-                {selectedProject ? (
-                  <>
-                    <button 
-                      onClick={() => setChatInput(`añadir una nueva tarea a ${selectedProject.title}`)}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      añadir una nueva tarea a {selectedProject.title}
-                    </button>
-                    <button 
-                      onClick={() => setChatInput(`desglosa el siguiente hito para ${selectedProject.title}`)}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      desglosa el siguiente hito
-                    </button>
-                    <button 
-                      onClick={() => setChatInput(`revisa y optimiza las tareas de ${selectedProject.title}`)}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      revisa y optimiza las tareas actuales
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button 
-                      onClick={() => setChatInput('planifica pasos para el crecimiento de una comunidad')}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      planifica pasos para el crecimiento de una comunidad
-                    </button>
-                    <button 
-                      onClick={() => setChatInput('ideas para proyectos de IA SaaS')}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      ideas para proyectos de IA SaaS
-                    </button>
-                    <button 
-                      onClick={() => setChatInput('bosquejo de hoja de ruta para Agente como Servicio')}
-                      className="w-full px-6 py-3 bg-[#242426] text-[#A0A0A0] rounded-lg hover:bg-[#2A2A2C] hover:text-white transition-all"
-                    >
-                      bosquejo de hoja de ruta para Agente como Servicio
-                    </button>
-                  </>
+            ) : (
+              <div className="w-full max-w-3xl space-y-4 pb-4">
+                {conversation.messages.map((msg, idx) => (
+                  <div key={msg.id} className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                    <div className={`inline-block px-4 py-2 rounded-lg max-w-[80%] ${
+                      msg.role === 'user' 
+                        ? 'bg-[#4ECDC4] text-black' 
+                        : 'bg-[#242426] text-white'
+                    }`}>
+                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {sendingMessage && (
+                  <div className="text-left">
+                    <div className="inline-block px-4 py-2 rounded-lg bg-[#242426] text-white">
+                      <span className="animate-pulse">Pensando...</span>
+                    </div>
+                  </div>
+                )}
+                {agentProcessing && chatMode === 'agent' && (
+                  <div className="text-left">
+                    <div className="inline-block px-4 py-2 rounded-lg bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
+                      <span className="animate-pulse flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        El agente está creando tareas...
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="w-full max-w-3xl space-y-4">
-              {conversation.messages.map((msg, idx) => (
-                <div key={msg.id} className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                  <div className={`inline-block px-4 py-2 rounded-lg ${
-                    msg.role === 'user' 
-                      ? 'bg-[#4ECDC4] text-black' 
-                      : 'bg-[#242426] text-white'
-                  }`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {sendingMessage && (
-                <div className="text-left">
-                  <div className="inline-block px-4 py-2 rounded-lg bg-[#242426] text-white">
-                    <span className="animate-pulse">Pensando...</span>
-                  </div>
-                </div>
-              )}
-              {agentProcessing && chatMode === 'agent' && (
-                <div className="text-left">
-                  <div className="inline-block px-4 py-2 rounded-lg bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30">
-                    <span className="animate-pulse flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                      El agente está creando tareas...
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Chat Input */}
-        <form onSubmit={handleChatSubmit} className="p-4 border-t border-white/10">
+        <form onSubmit={handleChatSubmit} className="flex-shrink-0 p-4 border-t border-white/10">
           <div className="max-w-3xl mx-auto">
             <div className="relative">
               <input
@@ -806,7 +816,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Scrollable Tasks List */}
-        <div className="flex-1 overflow-y-auto px-6">
+        <div className="flex-1 overflow-y-auto px-6 custom-scrollbar">
           <div className="space-y-2">
             {filteredTasks.length === 0 ? (
               <div className="text-center py-8 text-[#606060]">
@@ -936,7 +946,7 @@ export default function DashboardPage() {
       {/* Task form modal */}
       {(showTaskForm || editingTask) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
                 {editingTask ? 'Editar Tarea' : 'Crear Nueva Tarea'}
@@ -962,7 +972,7 @@ export default function DashboardPage() {
       {/* AI Task form modal */}
       {showAITaskForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="p-6">
               <AITaskForm
                 categories={categories}
@@ -983,7 +993,7 @@ export default function DashboardPage() {
       {/* Goal form modal */}
       {(showGoalForm || editingGoal) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#1A1A1C] rounded-xl border border-white/8 max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="p-6">
               <h2 className="text-xl font-semibold text-white mb-6">
                 {editingGoal ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}
