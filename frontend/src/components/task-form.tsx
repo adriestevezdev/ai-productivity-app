@@ -15,6 +15,8 @@ interface TaskFormProps {
   onSubmit?: (data: TaskCreate | TaskUpdate) => void;
   onCancel?: () => void;
   isEdit?: boolean;
+  showSuccess?: (title: string, message?: string) => void;
+  showError?: (title: string, message?: string) => void;
 }
 
 export function TaskForm({ 
@@ -25,7 +27,9 @@ export function TaskForm({
   selectedGoalId,
   onSubmit, 
   onCancel,
-  isEdit = false 
+  isEdit = false,
+  showSuccess,
+  showError
 }: TaskFormProps) {
   const { createTask, updateTask } = useTasks();
   const [isLoading, setIsLoading] = useState(false);
@@ -91,17 +95,29 @@ export function TaskForm({
         
         if (Object.keys(updateData).length > 0) {
           await updateTask(initialData.id, updateData);
+          showSuccess?.(
+            'Tarea actualizada',
+            `La tarea "${formData.title}" se ha actualizado correctamente`
+          );
           onSubmit?.(updateData);
         } else {
           onCancel?.();
         }
       } else {
         await createTask(formData);
+        showSuccess?.(
+          'Tarea creada',
+          `La tarea "${formData.title}" se ha creado correctamente`
+        );
         onSubmit?.(formData);
       }
     } catch (error: unknown) {
       console.error('Failed to save task:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save task. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar la tarea. Por favor, inténtalo de nuevo.';
+      showError?.(
+        isEdit ? 'Error al actualizar' : 'Error al crear tarea',
+        errorMessage
+      );
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);

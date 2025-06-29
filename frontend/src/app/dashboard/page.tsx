@@ -14,6 +14,10 @@ import { UpgradePrompt } from '@/components/upgrade-prompt';
 import { useConversations, useConversation } from '@/hooks/use-conversations';
 import { ConversationStatus } from '@/types/conversation';
 import { ConversationAnalysis } from '@/components/conversation-analysis';
+import { UserContextModal } from '@/components/user-context-modal';
+import { NotificationContainer } from '@/components/notification-container';
+import { useNotifications } from '@/hooks/use-notifications';
+import { usePersistedUserContext } from '@/hooks/use-persisted-user-context';
 
 export default function DashboardPage() {
   const apiClient = useApiClient();
@@ -49,6 +53,8 @@ export default function DashboardPage() {
   const [agentProcessing, setAgentProcessing] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [showUserContextModal, setShowUserContextModal] = useState(false);
+  const { userContext, isLoading: userContextLoading, saveUserContext } = usePersistedUserContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Use conversation hooks
@@ -58,9 +64,17 @@ export default function DashboardPage() {
     sendMessage, 
     sendingMessage,
     analyzeConversation,
-    generateProject,
-    error: conversationError 
+    generateProject
   } = useConversation(currentConversationId);
+
+  // Notifications
+  const { 
+    notifications, 
+    removeNotification, 
+    showSuccess, 
+    showError 
+  } = useNotifications();
+
 
   const loadData = useCallback(async () => {
     try {
@@ -682,7 +696,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="w-full max-w-3xl space-y-4 pb-4">
-                {conversation.messages.map((msg, idx) => (
+                {conversation.messages.map((msg) => (
                   <div key={msg.id} className={`${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                     <div className={`inline-block px-4 py-2 rounded-lg max-w-[80%] ${
                       msg.role === 'user' 
@@ -813,7 +827,11 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              <button className="p-1 text-[#606060] hover:text-white transition-all">
+              <button 
+                onClick={() => setShowUserContextModal(true)}
+                className="p-1 text-[#606060] hover:text-white transition-all"
+                title="User Context"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -976,6 +994,8 @@ export default function DashboardPage() {
                   setEditingTask(null);
                 }}
                 isEdit={!!editingTask}
+                showSuccess={showSuccess}
+                showError={showError}
               />
             </div>
           </div>
@@ -1008,6 +1028,8 @@ export default function DashboardPage() {
                   setEditingGoal(null);
                 }}
                 isEdit={!!editingGoal}
+                showSuccess={showSuccess}
+                showError={showError}
               />
             </div>
           </div>
@@ -1055,12 +1077,59 @@ export default function DashboardPage() {
             existing_goal_id: selectedProjectId // Use selected project if available
           })}
           onClose={() => setShowAnalysis(false)}
-          onProjectCreated={(goalId) => {
+          onProjectCreated={() => {
             loadData(); // Reload to show new goal/tasks
             // Keep current conversation active for further discussion
           }}
         />
       )}
+
+      {/* User Context Modal */}
+      <UserContextModal
+        isOpen={showUserContextModal}
+        onClose={() => setShowUserContextModal(false)}
+        initialData={userContext ? {
+          workDescription: userContext.work_description || '',
+          shortTermFocus: userContext.short_term_focus || [],
+          longTermGoals: userContext.long_term_goals || [],
+          otherContext: userContext.other_context || []
+        } : {
+          workDescription: '',
+          shortTermFocus: [],
+          longTermGoals: [],
+          otherContext: []
+        }}
+        isLoading={userContextLoading}
+        onSave={async (data) => {
+          try {
+            const contextData = {
+              work_description: data.workDescription,
+              short_term_focus: data.shortTermFocus,
+              long_term_goals: data.longTermGoals,
+              other_context: data.otherContext
+            };
+            
+            await saveUserContext(contextData);
+            
+            showSuccess(
+              'Contexto guardado', 
+              'Tu contexto de usuario se ha actualizado correctamente'
+            );
+          } catch (error) {
+            console.error('Failed to save user context:', error);
+            showError(
+              'Error al guardar', 
+              'No se pudo guardar tu contexto. Inténtalo de nuevo.'
+            );
+          }
+        }}
+      />
+
+      {/* Notification Container */}
+      <NotificationContainer
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
     </div>
   );
 }

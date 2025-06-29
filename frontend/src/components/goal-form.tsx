@@ -9,6 +9,8 @@ interface GoalFormProps {
   onSubmit?: (data: GoalCreate | GoalUpdate) => void;
   onCancel?: () => void;
   isEdit?: boolean;
+  showSuccess?: (title: string, message?: string) => void;
+  showError?: (title: string, message?: string) => void;
 }
 
 const goalIcons = [
@@ -25,7 +27,9 @@ export function GoalForm({
   initialData = {}, 
   onSubmit, 
   onCancel,
-  isEdit = false 
+  isEdit = false,
+  showSuccess,
+  showError
 }: GoalFormProps) {
   const { createGoal, updateGoal } = useTasks();
   const [isLoading, setIsLoading] = useState(false);
@@ -104,17 +108,29 @@ export function GoalForm({
         
         if (Object.keys(updateData).length > 0) {
           await updateGoal(initialData.id, updateData);
+          showSuccess?.(
+            'Proyecto actualizado',
+            `El proyecto "${goalData.title}" se ha actualizado correctamente`
+          );
           onSubmit?.(updateData);
         } else {
           onCancel?.();
         }
       } else {
         await createGoal(goalData);
+        showSuccess?.(
+          'Proyecto creado',
+          `El proyecto "${goalData.title}" se ha creado correctamente`
+        );
         onSubmit?.(goalData);
       }
     } catch (error: unknown) {
       console.error('Failed to save goal:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save project. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar el proyecto. Por favor, inténtalo de nuevo.';
+      showError?.(
+        isEdit ? 'Error al actualizar' : 'Error al crear proyecto',
+        errorMessage
+      );
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
