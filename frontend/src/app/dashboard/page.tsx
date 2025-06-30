@@ -369,9 +369,12 @@ export default function DashboardPage() {
     ? tasks.filter(task => {
         const matchesProject = task.goal_id === selectedProjectId;
         const isCompleted = task.status === TaskStatus.COMPLETED;
-        return matchesProject && (showCompletedTasks || !isCompleted);
+        return matchesProject && (showCompletedTasks ? isCompleted : !isCompleted);
       })
-    : tasks.filter(task => showCompletedTasks || task.status !== TaskStatus.COMPLETED);
+    : tasks.filter(task => {
+        const isCompleted = task.status === TaskStatus.COMPLETED;
+        return showCompletedTasks ? isCompleted : !isCompleted;
+      });
 
   // Get selected project info
   const selectedProject = selectedProjectId 
