@@ -371,10 +371,7 @@ export default function DashboardPage() {
         const isCompleted = task.status === TaskStatus.COMPLETED;
         return matchesProject && (showCompletedTasks ? isCompleted : !isCompleted);
       })
-    : tasks.filter(task => {
-        const isCompleted = task.status === TaskStatus.COMPLETED;
-        return showCompletedTasks ? isCompleted : !isCompleted;
-      });
+    : [];
 
   // Get selected project info
   const selectedProject = selectedProjectId 
@@ -849,16 +846,25 @@ export default function DashboardPage() {
         {/* Scrollable Tasks List */}
         <div className="flex-1 overflow-y-auto px-6 custom-scrollbar">
           <div className="space-y-2">
-            {filteredTasks.length === 0 ? (
+            {!selectedProjectId ? (
               <div className="text-center py-8 text-[#606060]">
-                <p className="text-sm">
-                  {selectedProjectId ? 'No hay tareas en este proyecto' : 'Aún no hay tareas'}
+                <svg className="w-12 h-12 mx-auto mb-4 text-[#404040]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-sm font-medium">
+                  Selecciona un proyecto
                 </p>
                 <p className="text-xs mt-1">
-                  {selectedProjectId 
-                    ? 'Las tareas de este proyecto aparecerán aquí' 
-                    : 'Las tareas creadas en el chat aparecerán aquí'
-                  }
+                  Debes seleccionar un proyecto para ver sus tareas
+                </p>
+              </div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="text-center py-8 text-[#606060]">
+                <p className="text-sm">
+                  {showCompletedTasks ? 'No hay tareas completadas en este proyecto' : 'No hay tareas pendientes en este proyecto'}
+                </p>
+                <p className="text-xs mt-1">
+                  {showCompletedTasks ? 'Las tareas completadas aparecerán aquí' : 'Las nuevas tareas aparecerán aquí'}
                 </p>
               </div>
             ) : (
