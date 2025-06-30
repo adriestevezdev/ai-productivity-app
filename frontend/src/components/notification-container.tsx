@@ -11,14 +11,16 @@ export function NotificationContainer({ notifications, onRemove }: NotificationC
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-[100] space-y-2">
-      {notifications.map((notification) => (
-        <NotificationToast
-          key={notification.id}
-          notification={notification}
-          onClose={onRemove}
-        />
-      ))}
+    <div className="fixed top-6 right-6 z-[100] space-y-3 max-w-sm w-full pointer-events-none">
+      <div className="space-y-3 pointer-events-auto">
+        {notifications.map((notification) => (
+          <NotificationToast
+            key={notification.id}
+            notification={notification}
+            onClose={onRemove}
+          />
+        ))}
+      </div>
     </div>
   );
 }

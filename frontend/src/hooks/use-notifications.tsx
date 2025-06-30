@@ -12,6 +12,8 @@ export function useNotifications() {
       id,
       duration: 4000, // Default 4 seconds
       ...notification,
+      // Ensure duration is always set, even if passed as undefined
+      duration: notification.duration !== undefined ? notification.duration : 4000,
     };
 
     setNotifications(prev => [...prev, newNotification]);
