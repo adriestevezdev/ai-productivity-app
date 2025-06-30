@@ -1,5 +1,8 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from app.core.config import settings
 from app.api.tasks import router as tasks_router
 from app.api.goals import router as goals_router
@@ -58,3 +61,46 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+# Custom exception handler for validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with user-friendly messages"""
+    errors = []
+    for error in exc.errors():
+        field = error["loc"][-1] if error["loc"] else "campo"
+        error_type = error["type"]
+        
+        # Custom error messages based on field and error type
+        if field == "title" and error_type == "string_too_short":
+            errors.append("El título no puede estar vacío")
+        elif field == "title" and error_type == "string_too_long":
+            errors.append("El título es demasiado largo (máximo 255 caracteres)")
+        elif field == "estimated_hours" and error_type == "greater_than_equal":
+            errors.append("El tiempo estimado no puede ser negativo")
+        elif field == "estimated_hours" and error_type == "int_parsing":
+            errors.append("El tiempo estimado debe ser un número entero")
+        elif field == "actual_hours" and error_type == "greater_than_equal":
+            errors.append("El tiempo real no puede ser negativo")
+        elif field == "due_date" and error_type == "datetime_parsing":
+            errors.append("La fecha de vencimiento no es válida")
+        elif field == "category_id" and error_type == "int_parsing":
+            errors.append("La categoría seleccionada no es válida")
+        elif field == "priority" and error_type == "enum":
+            errors.append("La prioridad seleccionada no es válida")
+        elif field == "status" and error_type == "enum":
+            errors.append("El estado seleccionado no es válido")
+        else:
+            # Generic message for other errors
+            msg = error.get("msg", "Error de validación")
+            errors.append(f"{field}: {msg}")
+    
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": {
+                "message": "Error al validar los datos",
+                "errors": errors
+            }
+        }
+    )

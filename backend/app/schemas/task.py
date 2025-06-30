@@ -5,12 +5,12 @@ from app.models.task import TaskStatus, TaskPriority
 
 
 class TaskBase(BaseModel):
-    title: str = Field(..., min_length=1, max_length=255)
+    title: str = Field(..., min_length=1, max_length=255, description="Título de la tarea")
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
-    estimated_hours: Optional[int] = Field(None, ge=0)
+    estimated_hours: Optional[int] = Field(None, ge=0, description="Tiempo estimado en horas")
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
     goal_id: Optional[int] = None
@@ -36,13 +36,13 @@ class TaskAICreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    title: Optional[str] = Field(None, min_length=1, max_length=255, description="Título de la tarea")
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     due_date: Optional[datetime] = None
-    estimated_hours: Optional[int] = Field(None, ge=0)
-    actual_hours: Optional[int] = Field(None, ge=0)
+    estimated_hours: Optional[int] = Field(None, ge=0, description="Tiempo estimado en horas")
+    actual_hours: Optional[int] = Field(None, ge=0, description="Tiempo real en horas")
     category_id: Optional[int] = None
     parent_task_id: Optional[int] = None
     goal_id: Optional[int] = None

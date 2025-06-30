@@ -63,13 +63,17 @@ export function TaskForm({
       newErrors.description = 'La descripción debe tener menos de 2000 caracteres';
     }
     
-    if (formData.due_date && new Date(formData.due_date) < new Date()) {
-      newErrors.due_date = 'La fecha de vencimiento no puede ser en el pasado';
+    // Due date is optional, but if provided, validate it
+    if (formData.due_date) {
+      const dueDate = new Date(formData.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dueDate < today) {
+        newErrors.due_date = 'La fecha de vencimiento no puede ser en el pasado';
+      }
     }
     
-    if (formData.estimated_hours && (formData.estimated_hours < 0 || formData.estimated_hours > 1000)) {
-      newErrors.estimated_hours = 'Las horas estimadas deben estar entre 0 y 1000';
-    }
+    // Estimated hours is optional - no validation needed since we use a select
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,6 +97,11 @@ export function TaskForm({
           }
         });
         
+        // Clean empty strings for optional fields
+        if (updateData.due_date === '') {
+          delete updateData.due_date;
+        }
+        
         if (Object.keys(updateData).length > 0) {
           await updateTask(initialData.id, updateData);
           showSuccess?.(
@@ -104,21 +113,66 @@ export function TaskForm({
           onCancel?.();
         }
       } else {
-        await createTask(formData);
+        // Clean the form data to remove empty strings for optional fields
+        const cleanedData: TaskCreate = { ...formData };
+        
+        // Remove empty strings for optional fields
+        if (cleanedData.due_date === '') {
+          delete cleanedData.due_date;
+        }
+        if (cleanedData.description === '') {
+          delete cleanedData.description;
+        }
+        if (!cleanedData.estimated_hours) {
+          delete cleanedData.estimated_hours;
+        }
+        if (!cleanedData.category_id) {
+          delete cleanedData.category_id;
+        }
+        if (!cleanedData.goal_id) {
+          delete cleanedData.goal_id;
+        }
+        if (!cleanedData.parent_task_id) {
+          delete cleanedData.parent_task_id;
+        }
+        if (!cleanedData.tag_ids || cleanedData.tag_ids.length === 0) {
+          delete cleanedData.tag_ids;
+        }
+        
+        await createTask(cleanedData);
         showSuccess?.(
           'Tarea creada',
           `La tarea "${formData.title}" se ha creado correctamente`
         );
-        onSubmit?.(formData);
+        onSubmit?.(cleanedData);
       }
     } catch (error: unknown) {
       console.error('Failed to save task:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al guardar la tarea. Por favor, inténtalo de nuevo.';
+      
+      // Extract error message from the error object
+      let errorMessage = 'Error al guardar la tarea. Por favor, inténtalo de nuevo.';
+      const fieldErrors: Record<string, string> = {};
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Check for specific field errors
+        if (errorMessage.includes('título')) {
+          fieldErrors.title = errorMessage;
+        } else if (errorMessage.includes('tiempo estimado')) {
+          fieldErrors.estimated_hours = errorMessage;
+        } else if (errorMessage.includes('fecha de vencimiento')) {
+          fieldErrors.due_date = errorMessage;
+        }
+      }
+      
       showError?.(
-        isEdit ? 'Error al actualizar' : 'Error al crear tarea',
+        isEdit ? 'Error al actualizar tarea' : 'Error al crear tarea',
         errorMessage
       );
-      setErrors({ submit: errorMessage });
+      
+      // Set both field-specific and general errors
+      setErrors({ ...fieldErrors, submit: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -282,23 +336,36 @@ export function TaskForm({
 
         <div>
           <label htmlFor="estimated_hours" className="block text-sm font-medium text-white mb-2">
-            Horas Estimadas
+            Tiempo Estimado
           </label>
-          <input
-            type="number"
+          <select
             id="estimated_hours"
             name="estimated_hours"
             value={formData.estimated_hours ?? ''}
             onChange={handleChange}
-            min="0"
-            max="1000"
             className={`w-full bg-[#242426] text-white px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
               errors.estimated_hours 
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-white/8 focus:border-[#4ECDC4] focus:ring-[#4ECDC4]/20'
             }`}
-            placeholder="0"
-          />
+          >
+            <option value="">Sin tiempo estimado</option>
+            <option value="1">1 hora</option>
+            <option value="2">2 horas</option>
+            <option value="3">3 horas</option>
+            <option value="4">4 horas</option>
+            <option value="5">5 horas</option>
+            <option value="6">6 horas</option>
+            <option value="7">7 horas</option>
+            <option value="8">8 horas</option>
+            <option value="12">12 horas</option>
+            <option value="16">16 horas</option>
+            <option value="24">1 día (24 horas)</option>
+            <option value="48">2 días (48 horas)</option>
+            <option value="72">3 días (72 horas)</option>
+            <option value="120">1 semana (120 horas)</option>
+            <option value="240">2 semanas (240 horas)</option>
+          </select>
           {errors.estimated_hours && <p className="mt-1 text-sm text-red-400">{errors.estimated_hours}</p>}
         </div>
       </div>

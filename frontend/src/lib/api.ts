@@ -54,7 +54,18 @@ export class ApiClient {
         errorData = { detail: response.statusText };
       }
       
-      const error: ApiError = new Error(errorData.detail || `Request failed with status ${response.status}`);
+      // Handle structured error responses from the backend
+      let errorMessage = 'Error al procesar la solicitud';
+      if (errorData.detail) {
+        if (typeof errorData.detail === 'object' && errorData.detail.errors) {
+          // Handle validation errors with specific messages
+          errorMessage = errorData.detail.errors.join(', ');
+        } else if (typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        }
+      }
+      
+      const error: ApiError = new Error(errorMessage);
       error.status = response.status;
       error.data = errorData;
       

@@ -246,7 +246,31 @@ async def update_task(
     ).first()
     
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    
+    # Validate fields
+    errors = []
+    
+    # Check if title is not empty when provided
+    if task_data.title is not None and len(task_data.title.strip()) == 0:
+        errors.append("El título no puede estar vacío")
+    
+    # Check if estimated_hours is valid when provided
+    if task_data.estimated_hours is not None and task_data.estimated_hours < 0:
+        errors.append("El tiempo estimado no puede ser negativo")
+    
+    # Check if actual_hours is valid when provided
+    if task_data.actual_hours is not None and task_data.actual_hours < 0:
+        errors.append("El tiempo real no puede ser negativo")
+    
+    if errors:
+        raise HTTPException(
+            status_code=400, 
+            detail={
+                "message": "Error al validar los datos de la tarea",
+                "errors": errors
+            }
+        )
     
     # Update fields
     update_data = task_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
